@@ -1,0 +1,3 @@
+# Uma classe por linha. Substitua pelos nomes definidos pela equipe.
+platform
+takeoff
