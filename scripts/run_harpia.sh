@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HARPYA_PYTHON="${HARPYA_PYTHON:-/root/yolo_venv/bin/python}"
+HARPIA_PYTHON="${HARPIA_PYTHON:-/root/yolo_venv/bin/python}"
 
 if [[ $# -lt 1 ]]; then
     echo "Uso:"
@@ -13,10 +13,10 @@ if [[ $# -lt 1 ]]; then
     exit 2
 fi
 
-if [[ ! -x "$HARPYA_PYTHON" ]]; then
-    echo "ERRO: Python YOLO do HARPia não encontrado em: $HARPYA_PYTHON" >&2
-    echo "Defina HARPYA_PYTHON se o ambiente estiver em outro caminho." >&2
+if [[ ! -x "$HARPIA_PYTHON" ]]; then
+    echo "ERRO: Python YOLO do HARPia não encontrado em: $HARPIA_PYTHON" >&2
+    echo "Defina HARPIA_PYTHON se o ambiente estiver em outro caminho." >&2
     exit 1
 fi
 
-exec "$HARPYA_PYTHON" "$ROOT_DIR/inference.py" "$@"
+exec "$HARPIA_PYTHON" "$ROOT_DIR/inference.py" "$@"
