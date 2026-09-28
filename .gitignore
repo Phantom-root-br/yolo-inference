@@ -19,3 +19,12 @@ runs/
 .DS_Store
 .vscode/
 .idea/
+
+# Video experiment artifacts
+input/*.mp4
+input/*.mkv
+input/*.webm
+output/*.mp4
+output/*.mkv
+output/*.webm
+logs/*.txt

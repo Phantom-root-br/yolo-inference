@@ -1,0 +1,13 @@
+{
+  "file": "input/people_cc.mp4",
+  "width": 1280,
+  "height": 720,
+  "original_fps": 29.97002997002997,
+  "approx_frames": 1137,
+  "duration_seconds": 37.9379,
+  "decode_test": {
+    "0": true,
+    "568": true,
+    "1135": true
+  }
+}
