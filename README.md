@@ -1,47 +1,132 @@
 # YOLO Inference
 
-Inferência simples com YOLO para o projeto **HARPia**, mantendo o código genérico o suficiente para ser reutilizado fora do ambiente do drone.
+Inferência YOLO reproduzível para o projeto **HARPia**, com dois fluxos validados:
+
+1. inferência em imagem estática;
+2. prova de conceito de **detecção de pessoas em vídeo** com YOLO11n em CPU.
 
 [![CI](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml/badge.svg)](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml)
 
+## Status
+
+A prova de conceito em vídeo foi validada de ponta a ponta no ambiente HARPia:
+
+- modelo principal: `yolo11n.pt`;
+- classe: `person`, descoberta programaticamente a partir de `model.names`;
+- dispositivo: CPU;
+- entrada: vídeo público Creative Commons de 1280×720;
+- `imgsz=640`;
+- `conf=0.25`;
+- 1137/1137 frames processados;
+- 7044 detecções de pessoas;
+- 2,531 FPS efetivos de processamento;
+- vídeo anotado preservando os 29,97 FPS da fonte.
+
+> A inferência é offline. O FPS de processamento do YOLO não altera o FPS de reprodução do vídeo gerado.
+
 ## Objetivo
 
-Esta primeira versão atende diretamente à meta:
+O repositório atende à meta inicial do HARPia de estudar YOLO e produzir um script simples, reutilizável e documentado usando um modelo pré-treinado sem fine-tuning específico para a missão.
 
-> Estudar o YOLO e construir um script de inferência simples usando o modelo cru.
+O escopo atual é exclusivamente de percepção. **Não há controle PX4, arming, takeoff ou lógica de navegação neste repositório.** O código de inferência também não depende de ROS 2.
 
-Aqui, **modelo cru** significa um peso pré-treinado do Ultralytics, sem fine-tuning para classes específicas do HARPia. O padrão é `yolo11n.pt`.
+## Arquitetura
 
-O script recebe uma imagem, executa a inferência, mostra as detecções no terminal e salva uma cópia anotada. Para cada bounding box também calcula o centro e o erro em pixels em relação ao centro da imagem.
+### Imagem estática
 
 ```text
 imagem
-  |
-  v
+  │
+  ▼
 YOLO11n pré-treinado
-  |
-  v
-classe + confiança + bbox
-  |
-  +--> imagem anotada
-  |
-  +--> centro da bbox (cx, cy)
-  |
-  +--> erro visual (ex, ey)
+  │
+  ├── classe + confiança + bbox
+  ├── centro da bbox (cx, cy)
+  ├── erro visual (ex, ey)
+  └── imagem anotada + JSON opcional
 ```
 
-Nesta etapa **não há controle do PX4** e **não há dependência de ROS 2 no código de inferência**.
+### Vídeo
 
-## O que o script faz
+```text
+vídeo
+  │
+  ▼
+OpenCV VideoCapture
+  │
+  ▼
+frame
+  │
+  ▼
+YOLO11n ── classes=[person]
+  │
+  ├── bounding boxes + confiança
+  ├── métricas agregadas
+  ├── frames representativos
+  └── vídeo anotado no FPS original
+```
 
-- usa `yolo11n.pt` por padrão;
-- roda em CPU por padrão;
-- aceita qualquer imagem suportada pelo OpenCV/Ultralytics;
-- mostra classe, `class_id`, confiança e bounding box;
-- calcula `cx`, `cy`, `ex` e `ey`;
-- salva imagem anotada;
-- opcionalmente salva as detecções em JSON;
-- permite trocar modelo, confiança, `imgsz` e dispositivo pela CLI.
+## Resultado principal da POC em vídeo
+
+Execução completa com YOLO11n no hardware HARPia:
+
+| Métrica | Resultado |
+|---|---:|
+| Resolução | 1280×720 |
+| FPS da fonte | 29,970 |
+| Frames processados | 1137 |
+| Duração do vídeo | 37,938 s |
+| Tempo de processamento | 449,202 s |
+| Tempo médio por frame | 395,077 ms |
+| FPS efetivo de processamento | 2,531 |
+| Inferência YOLO média | 354,935 ms/frame |
+| Detecções de `person` | 7044 |
+| Confidence média | 0,5562 |
+| Confidence mínima | 0,2500 |
+| Confidence máxima | 0,9093 |
+| Tamanho do YOLO11n | 5,35 MB |
+
+No hardware testado, o processamento ficou aproximadamente **11,84× abaixo do tempo real** em relação aos 29,97 FPS da fonte. Isso não é um problema para esta POC, cujo objetivo é validar o pipeline offline.
+
+Os dados completos estão em [`docs/results.md`](docs/results.md) e nos JSONs da pasta [`results/`](results/).
+
+## Evidências visuais
+
+Os frames abaixo foram selecionados automaticamente durante a execução completa por apresentarem alta quantidade de pessoas detectadas.
+
+| Frame 252 | Frame 269 | Frame 350 |
+|---|---|---|
+| ![Frame 252](results/examples/frame_000252.jpg) | ![Frame 269](results/examples/frame_000269.jpg) | ![Frame 350](results/examples/frame_000350.jpg) |
+
+## Por que YOLO11n?
+
+Foi executado um benchmark curto e controlado com os mesmos primeiros 60 frames, usando os mesmos parâmetros e o mesmo hardware.
+
+| Métrica | YOLO11n | YOLO11s |
+|---|---:|---:|
+| FPS de processamento | 1,473 | 1,042 |
+| ms/frame | 678,9 | 959,8 |
+| YOLO ms/frame | 568,9 | 862,5 |
+| Detecções | 425 | 422 |
+| Confidence média | 0,5533 | 0,5887 |
+| Modelo | 5,35 MB | 18,42 MB |
+
+O YOLO11s consumiu aproximadamente **1,41× mais tempo por frame** e seu peso é aproximadamente **3,44× maior**, sem aumento no total de detecções no trecho comparado. Por isso, **YOLO11n é o baseline recomendado para o hardware atual do HARPia**.
+
+## Ambiente validado
+
+O experimento principal foi executado dentro do container HARPia com:
+
+- Intel Core i3-3217U @ 1.80 GHz;
+- 2 núcleos físicos / 4 threads;
+- sem GPU NVIDIA;
+- CUDA desabilitado;
+- Python 3.10.12;
+- PyTorch CPU;
+- Ultralytics 8.4.158;
+- OpenCV 5.0.0.
+
+O PyTorch pode tentar inicializar NNPACK em CPUs antigas. O script de vídeo desabilita esse backend explicitamente quando disponível; isso não desabilita a inferência em CPU e não tem relação com CUDA.
 
 ## Instalação rápida
 
@@ -55,23 +140,96 @@ cd yolo-inference
 source .venv/bin/activate
 ```
 
-O setup cria uma `.venv` local e instala as dependências listadas em `requirements.txt`.
+O setup cria uma `.venv` local e instala as dependências de `requirements.txt`.
 
-> O primeiro uso de `yolo11n.pt` pode fazer o Ultralytics baixar o peso automaticamente. Arquivos `.pt` não são versionados neste repositório.
+> Pesos `.pt`, vídeos de entrada e vídeos gerados não são versionados.
 
-## Uso básico
+## Uso no HARPia
+
+O ambiente usado no HARPia fica isolado em `/root/yolo_venv`. Não é necessário reinstalar nem modificar ROS 2, PX4 ou Gazebo.
+
+```bash
+cd /root/harpia_ws/src/yolo-inference
+```
+
+### 1. Baixar o vídeo reproduzível
+
+```bash
+./scripts/download_video.sh
+```
+
+O script baixa a fonte registrada em `results/video_source.json` para:
+
+```text
+input/people_cc.mp4
+```
+
+### 2. Teste curto
+
+```bash
+/root/yolo_venv/bin/python scripts/detect_people.py \
+  --input input/people_cc.mp4 \
+  --output output/yolo11n_test60.mp4 \
+  --model yolo11n.pt \
+  --imgsz 640 \
+  --conf 0.25 \
+  --device cpu \
+  --max-frames 60 \
+  --metrics results/yolo11n_test60_metrics.json \
+  --examples 0
+```
+
+### 3. Execução completa
+
+```bash
+/root/yolo_venv/bin/python scripts/detect_people.py \
+  --input input/people_cc.mp4 \
+  --output output/yolo11n_people.mp4 \
+  --model yolo11n.pt \
+  --imgsz 640 \
+  --conf 0.25 \
+  --device cpu \
+  --metrics results/yolo11n_metrics.json \
+  --examples 3 \
+  --examples-dir results/examples
+```
+
+## CLI do detector de vídeo
+
+```text
+--input            vídeo de entrada
+--output           vídeo anotado de saída
+--model            peso YOLO; padrão yolo11n.pt
+--imgsz            tamanho da entrada; padrão 640
+--conf             confiança mínima; padrão 0.25
+--device           dispositivo; padrão cpu
+--max-frames       limita frames para smoke tests
+--metrics          JSON de métricas
+--examples         quantidade de frames representativos
+--examples-dir     diretório dos frames de exemplo
+--progress-every   frequência das mensagens de progresso
+```
+
+A classe `person` não é definida por um número mágico no pipeline. O script procura o nome `person` em `model.names` e usa o ID correspondente no argumento `classes` do YOLO.
+
+## Métricas: FPS da fonte vs FPS de processamento
+
+São conceitos diferentes:
+
+- **FPS da fonte:** taxa de reprodução do vídeo original;
+- **FPS de processamento:** quantidade de frames inferidos por segundo pela máquina.
+
+O `VideoWriter` usa o FPS original. Assim, mesmo que o YOLO processe lentamente, o vídeo final mantém duração e velocidade de reprodução compatíveis com a fonte.
+
+## Inferência em imagem estática
+
+O fluxo original continua disponível em `inference.py`.
 
 ```bash
 python inference.py imagem.jpg
 ```
 
-A saída padrão será:
-
-```text
-imagem_yolo.jpg
-```
-
-Exemplo com parâmetros explícitos:
+Exemplo completo:
 
 ```bash
 python inference.py imagem.jpg \
@@ -83,24 +241,9 @@ python inference.py imagem.jpg \
   --json-output resultado.json
 ```
 
-Ajuda completa:
+No HARPia:
 
 ```bash
-python inference.py --help
-```
-
-## Uso no HARPia
-
-O HARPia já possui um ambiente YOLO isolado em `/root/yolo_venv`. **Não é necessário reinstalar a stack ROS/PX4/Gazebo nem misturar o Python do ROS com o Python do YOLO.**
-
-Dentro do container:
-
-```bash
-cd /root/harpia_ws/src
-
-git clone https://github.com/Phantom-root-br/yolo-inference.git
-cd yolo-inference
-
 /root/yolo_venv/bin/python inference.py \
   /root/harpia_ws/src/HARPia_YOLO_Export/camera_5m.jpg \
   --model yolo11n.pt \
@@ -111,72 +254,20 @@ cd yolo-inference
   --json-output /root/harpia_ws/src/HARPia_YOLO_Export/camera_5m_yolo.json
 ```
 
-Também há um wrapper de conveniência:
+Também existe o wrapper:
 
 ```bash
-./scripts/run_harpia.sh \
-  /root/harpia_ws/src/HARPia_YOLO_Export/camera_5m.jpg
+./scripts/run_harpia.sh /root/harpia_ws/src/HARPia_YOLO_Export/camera_5m.jpg
 ```
 
 Mais detalhes em [`docs/HARPIA.md`](docs/HARPIA.md).
-
-## Parâmetros
-
-| Parâmetro | Padrão | Descrição |
-|---|---:|---|
-| `image` | obrigatório | imagem de entrada |
-| `--model` | `yolo11n.pt` | peso/modelo YOLO |
-| `--output` | automático | caminho da imagem anotada |
-| `--json-output` | desativado | caminho opcional para JSON |
-| `--conf` | `0.25` | confiança mínima |
-| `--imgsz` | `640` | tamanho da entrada |
-| `--device` | `cpu` | `cpu`, `0`, `1`, etc. |
-
-## Saída de uma detecção
-
-Exemplo:
-
-```text
-Detecção 1
-  classe      : person
-  class_id    : 0
-  confiança   : 0.888
-  bbox         : x1=120.5, y1=84.1, x2=244.9, y2=438.2
-  centro bbox  : cx=182.7, cy=261.2
-  erro centro  : ex=-137.3, ey=21.2
-```
-
-Os erros são definidos como:
-
-```text
-cx = (x1 + x2) / 2
-cy = (y1 + y2) / 2
-
-ex = cx - largura_imagem / 2
-ey = cy - altura_imagem / 2
-```
-
-Esses valores são úteis para a evolução futura do pipeline visual do HARPia, mas **não comandam o veículo nesta versão**.
-
-## Por que uma imagem do HARPia pode retornar 0 detecções?
-
-`yolo11n.pt` é um modelo pré-treinado em classes genéricas. Ele ainda não conhece necessariamente os objetos específicos que serão definidos para o HARPia.
-
-Portanto:
-
-```text
-Detecções: 0
-```
-
-pode ser um resultado perfeitamente válido nesta etapa.
-
-O objetivo inicial é validar o fluxo de inferência, e não medir ainda o desempenho de um detector treinado para a missão.
 
 ## Estrutura do projeto
 
 ```text
 .
 ├── inference.py
+├── visual_report.py
 ├── requirements.txt
 ├── requirements-dev.txt
 ├── pyproject.toml
@@ -184,62 +275,97 @@ O objetivo inicial é validar o fluxo de inferência, e não medir ainda o desem
 ├── CONTRIBUTING.md
 ├── docs/
 │   ├── ARCHITECTURE.md
-│   └── HARPIA.md
-├── examples/
-│   └── README.md
+│   ├── HARPIA.md
+│   └── results.md
+├── input/
+│   └── .gitkeep
+├── output/
+│   └── .gitkeep
+├── results/
+│   ├── comparison.csv
+│   ├── video_metadata.json
+│   ├── video_source.json
+│   ├── yolo11n_metrics.json
+│   ├── yolo11n_test60_metrics.json
+│   ├── yolo11s_test60_metrics.json
+│   └── examples/
+│       ├── frame_000252.jpg
+│       ├── frame_000269.jpg
+│       └── frame_000350.jpg
 ├── scripts/
+│   ├── detect_people.py
+│   ├── download_video.sh
 │   ├── setup.sh
 │   └── run_harpia.sh
 ├── tests/
 │   └── test_inference.py
 └── .github/
-    ├── workflows/
-    │   └── ci.yml
-    └── pull_request_template.md
+    └── workflows/
+        └── ci.yml
 ```
+
+## Arquivos deliberadamente não versionados
+
+O `.gitignore` mantém fora do Git:
+
+- `*.pt` — pesos YOLO;
+- vídeos em `input/`;
+- vídeos em `output/`;
+- caches e ambientes virtuais;
+- logs temporários.
+
+Os JSONs, CSV e frames de evidência são pequenos e permanecem versionados para permitir auditoria dos resultados.
 
 ## Desenvolvimento
 
-Para instalar apenas as ferramentas de desenvolvimento:
-
 ```bash
 python -m pip install -r requirements-dev.txt
-```
-
-Rodar os testes:
-
-```bash
 pytest
-```
-
-Rodar lint:
-
-```bash
 ruff check .
 ```
 
-O CI executa essas verificações sem baixar pesos YOLO nem rodar inferência pesada.
+O CI executa verificações leves sem baixar pesos e sem rodar inferência pesada.
 
-## Roadmap
+## Limitações
+
+- o benchmark foi realizado em uma CPU antiga e não representa hardware moderno;
+- a inferência de vídeo é offline e não atende tempo real nesse hardware;
+- YOLO11n utiliza pesos COCO pré-treinados, sem fine-tuning específico para o HARPia;
+- contagens representam detecções por frame, não pessoas únicas rastreadas ao longo do vídeo;
+- não há tracking de identidade;
+- não há integração operacional com PX4 nesta POC.
+
+## Próximos passos
+
+```text
+câmera do drone
+      │
+      ▼
+    YOLO
+      │
+      ▼
+person detection
+```
+
+Roadmap:
 
 - [x] inferência em imagem estática;
 - [x] bounding boxes e confiança;
-- [x] centro da detecção e erro visual;
-- [x] saída opcional em JSON;
-- [x] setup reproduzível;
-- [x] testes leves e CI;
-- [ ] benchmark padronizado;
-- [ ] entrada contínua de `/camera/image_raw`;
+- [x] saída JSON;
+- [x] detecção de pessoas em vídeo;
+- [x] métricas de desempenho;
+- [x] evidências visuais;
+- [x] benchmark YOLO11n vs YOLO11s;
+- [x] seleção racional do YOLO11n para o hardware atual;
+- [ ] entrada contínua da câmera do HARPia;
 - [ ] nó ROS 2 persistente;
-- [ ] `/yolo/detections`;
-- [ ] `/yolo/debug_image`;
-- [ ] modelo treinado/fine-tuned para classes HARPia;
+- [ ] publicação de detecções;
+- [ ] avaliação em imagens reais da missão;
+- [ ] fine-tuning quando houver dataset específico;
 - [ ] integração com seleção de alvo;
 - [ ] controle PX4 somente após validação do detector.
 
-## Arquitetura
-
-A separação entre o script atual e a futura integração ROS 2 está documentada em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+A separação entre percepção e futura integração ROS 2 está documentada em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Licença
 
