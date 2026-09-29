@@ -27,4 +27,6 @@ input/*.webm
 output/*.mp4
 output/*.mkv
 output/*.webm
+output/*.html
 logs/*.txt
+logs/*.log
