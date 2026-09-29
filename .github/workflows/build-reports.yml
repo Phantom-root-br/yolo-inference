@@ -1,0 +1,44 @@
+name: Build PDF reports
+
+on:
+  push:
+    branches:
+      - docs/reports-and-readme
+    paths:
+      - "docs/report_sources/**"
+      - ".github/workflows/build-reports.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-reports:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install report dependencies
+        run: python -m pip install reportlab
+
+      - name: Build reports
+        run: python docs/report_sources/build_pdf_reports.py
+
+      - name: Commit generated PDFs
+        run: |
+          git add docs/reports/Relatorio_Tecnico_HARPia_YOLO_POC.pdf
+          git add docs/reports/Guia_Estudo_Codigo_HARPia_YOLO.pdf
+          if git diff --cached --quiet; then
+            echo "PDFs already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: build PDF reports"
+          git push
