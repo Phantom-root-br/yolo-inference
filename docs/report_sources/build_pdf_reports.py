@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from reportlab import rl_config
 from reportlab.lib import colors
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import A4
@@ -13,6 +14,8 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, PageBreak, Preformatted,
     Table, TableStyle, ListFlowable, ListItem,
 )
+
+rl_config.invariant = True
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / 'docs' / 'report_sources'
