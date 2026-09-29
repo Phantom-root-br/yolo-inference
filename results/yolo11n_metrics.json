@@ -1,0 +1,42 @@
+{
+  "model": "yolo11n.pt",
+  "model_size_mb": 5.353702545166016,
+  "class": {
+    "name": "person",
+    "id": 0
+  },
+  "input_video": "input/people_cc.mp4",
+  "output_video": "output/yolo11n_people.mp4",
+  "video": {
+    "width": 1280,
+    "height": 720,
+    "original_fps": 29.97002997002997,
+    "source_frame_count": 1137,
+    "processed_frames": 1137,
+    "output_duration_seconds": 37.9379
+  },
+  "parameters": {
+    "imgsz": 640,
+    "confidence_threshold": 0.25,
+    "device": "cpu",
+    "max_frames": null
+  },
+  "timing": {
+    "model_load_seconds": 0.17551134100358468,
+    "processing_seconds": 449.20237653899676,
+    "processing_fps": 2.5311531269276206,
+    "mean_ms_per_frame": 395.0768483192584,
+    "mean_yolo_inference_ms": 354.935124728213
+  },
+  "detections": {
+    "total_person_detections": 7044,
+    "mean_confidence": 0.556181843720973,
+    "min_confidence": 0.25002360343933105,
+    "max_confidence": 0.9092854261398315
+  },
+  "examples": [
+    "results/examples/frame_000252.jpg",
+    "results/examples/frame_000269.jpg",
+    "results/examples/frame_000350.jpg"
+  ]
+}
