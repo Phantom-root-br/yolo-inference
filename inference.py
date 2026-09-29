@@ -14,7 +14,6 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-
 DEFAULT_MODEL = "yolo11n.pt"
 DEFAULT_CONFIDENCE = 0.25
 DEFAULT_IMAGE_SIZE = 640
