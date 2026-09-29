@@ -3,7 +3,7 @@ name: Build PDF reports
 on:
   push:
     branches:
-      - docs/reports-and-readme
+      - main
     paths:
       - "docs/report_sources/**"
       - ".github/workflows/build-reports.yml"
