@@ -11,7 +11,6 @@ import os
 from pathlib import Path
 from urllib.parse import quote
 
-
 DEFAULT_METRICS = Path("results/yolo11n_metrics.json")
 DEFAULT_COMPARISON = Path("results/comparison.csv")
 DEFAULT_SOURCE = Path("results/video_source.json")
