@@ -8,7 +8,13 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from harpia_mission import Detection, MissionConfig, MissionFSM, MissionInput, TargetSelector
+from harpia_mission import (  # noqa: E402
+    Detection,
+    MissionConfig,
+    MissionFSM,
+    MissionInput,
+    TargetSelector,
+)
 
 WIDTH = 1280
 HEIGHT = 720
@@ -16,7 +22,10 @@ HEIGHT = 720
 
 def show(label: str, decision) -> None:
     suffix = f" reason={decision.reason}" if decision.reason else ""
-    print(f"{label:<20} state={decision.state.value:<18} action={decision.action:<26} payload={decision.payload}{suffix}")
+    print(
+        f"{label:<20} state={decision.state.value:<18} "
+        f"action={decision.action:<26} payload={decision.payload}{suffix}"
+    )
 
 
 def main() -> None:
@@ -34,7 +43,10 @@ def main() -> None:
     show("preflight", mission.tick(MissionInput(preflight_ok=True)))
     show("takeoff", mission.tick(MissionInput(takeoff_reached=True)))
     for index in range(4):
-        show(f"search leg {index}", mission.tick(MissionInput(search_step_complete=index > 0)))
+        show(
+            f"search leg {index}",
+            mission.tick(MissionInput(search_step_complete=index > 0)),
+        )
 
     frames = [
         Detection((140, 210, 360, 650), 0.80),
@@ -47,7 +59,11 @@ def main() -> None:
     ]
 
     for index, detection in enumerate(frames, start=1):
-        target = selector.update([detection], frame_width=WIDTH, frame_height=HEIGHT)
+        target = selector.update(
+            [detection],
+            frame_width=WIDTH,
+            frame_height=HEIGHT,
+        )
         show(f"camera frame {index}", mission.tick(MissionInput(target=target)))
 
     show(
