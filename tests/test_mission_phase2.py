@@ -1,6 +1,17 @@
 import pytest
 
-from harpia_mission import Detection, iou, normalized_error
+from harpia_mission import (
+    Detection,
+    MissionConfig,
+    MissionFSM,
+    MissionInput,
+    MissionState,
+    SquareSpiralPlanner,
+    TargetObservation,
+    TargetSelector,
+    iou,
+    normalized_error,
+)
 
 
 def test_normalized_error_center_is_zero():
@@ -13,7 +24,6 @@ def test_normalized_error_center_is_zero():
 def test_iou_identical_boxes_is_one():
     box = Detection((10, 20, 30, 40), 0.8)
     assert iou(box, box) == pytest.approx(1.0)
-from harpia_mission import SquareSpiralPlanner
 
 
 def test_square_spiral_grows_every_two_legs():
@@ -42,7 +52,6 @@ def test_square_spiral_stops_at_limit():
     assert planner.current_step() is not None
     planner.advance()
     assert planner.current_step() is None
-from harpia_mission import Detection, TargetSelector
 
 
 def test_selector_confirms_consistent_target_after_three_hits():
@@ -99,14 +108,6 @@ def test_selector_resets_after_misses():
     assert target is not None
     assert target.age_frames == 1
     assert not target.confirmed
-from harpia_mission import (
-    Detection,
-    MissionConfig,
-    MissionFSM,
-    MissionInput,
-    MissionState,
-    TargetObservation,
-)
 
 
 def target(ex: float, ey: float, *, confirmed: bool = True) -> TargetObservation:
