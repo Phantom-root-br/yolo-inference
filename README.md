@@ -6,29 +6,132 @@ Inferência YOLO reproduzível para o projeto **HARPia**, com foco em percepçã
 
 ## Visão geral
 
-O repositório possui dois fluxos principais:
+O repositório possui agora três camadas complementares:
 
 1. **imagem estática** com `inference.py`;
-2. **detecção de pessoas em vídeo** com `scripts/detect_people.py`.
+2. **detecção de pessoas em vídeo** com `scripts/detect_people.py`;
+3. **lógica de missão orientada pela percepção** em `harpia_mission/`, sem dependência direta de PX4.
 
 A POC de vídeo foi validada no ambiente HARPia usando **YOLO11n em CPU**, sem modificar ROS 2, PX4 ou Gazebo.
 
+A Fase 2 adiciona:
+
 ```text
-vídeo
-  |
-  v
-OpenCV VideoCapture
-  |
-  v
-frame -> YOLO11n -> classe person
-                    |
-                    +-> bounding boxes + confiança
-                    +-> métricas JSON
-                    +-> frames de evidência
-                    +-> vídeo anotado
+câmera / detector
+      |
+      v
+TargetSelector
+      |
+      v
+TargetObservation (ex_norm, ey_norm, confiança, continuidade)
+      |
+      v
+MissionFSM
+      |
+      v
+ActionDecision
 ```
 
-## Status da POC
+A máquina de estados não envia comandos PX4. Ela produz intenções semânticas que poderão ser consumidas por um adaptador de voo mantido separadamente.
+
+## Fase 2 — busca, aquisição e missão
+
+A lógica de missão está documentada em [`docs/MISSION_FSM.md`](docs/MISSION_FSM.md).
+
+Estados atuais:
+
+```text
+PREFLIGHT -> TAKEOFF -> SEARCH -> ACQUIRE -> TRACK -> APPROACH -> STABILIZE
+                                                        |
+                                                        v
+                                               LAND_ZONE_SELECT
+                                                        |
+                                                        v
+                                                       LAND
+                                                        |
+                                                        v
+                                                     COMPLETE
+```
+
+`ABORT` pode ser solicitado globalmente.
+
+### Busca em espiral quadrada
+
+A varredura usa uma espiral quadrada crescente:
+
+```text
+EAST  d
+NORTH d
+WEST  2d
+SOUTH 2d
+EAST  3d
+NORTH 3d
+...
+```
+
+Cada perna termina com uma rotação lógica de 90 graus. O comprimento cresce a cada duas pernas até `search_max_leg_m` ou até surgir um candidato humano.
+
+### Seleção do humano por verossimilhança
+
+O `TargetSelector` não é um tracker de identidade. Para o cenário esperado de um único alvo relevante, ele usa continuidade espacial:
+
+```text
+score = 0.50 * IoU
+      + 0.30 * proximidade entre centros
+      + 0.20 * confidence
+```
+
+A detecção precisa persistir por `confirm_hits` observações consistentes antes de ser marcada como confirmada.
+
+### Erro visual normalizado
+
+```text
+ex_norm = (cx - W/2) / (W/2)
+ey_norm = (cy - H/2) / (H/2)
+```
+
+Esses valores formam o contrato de percepção para a etapa de aproximação e estabilização.
+
+## Simulação da FSM sem PX4
+
+```bash
+python scripts/simulate_mission_fsm.py
+```
+
+A simulação percorre preflight, decolagem simulada, espiral de busca, aquisição de alvo, aproximação, estabilização e pouso em zona segura, imprimindo apenas `ActionDecision`.
+
+## Alvo humano no Gazebo
+
+A branch de desenvolvimento da Fase 2 inclui um ator humano para teste de câmera:
+
+```text
+sim/gazebo/human_actor.sdf
+scripts/gazebo_spawn_human.sh
+scripts/gazebo_remove_human.sh
+docs/GAZEBO_HUMAN_TARGET.md
+```
+
+Esse alvo é apenas um artefato de simulação para validar câmera e detecção.
+
+## Contrato para integração PX4
+
+Este repositório termina em `ActionDecision`. O responsável pela camada PX4 deve converter as seguintes intenções em controle de voo e devolver confirmações de execução:
+
+| `action` | Intenção |
+|---|---|
+| `WAIT_PREFLIGHT` | aguardar subsistemas |
+| `TAKEOFF` | atingir `height_m` |
+| `SEARCH_STEP` | executar uma perna da espiral |
+| `HOLD` | manter condição segura |
+| `ALIGN_TARGET` | reduzir `ex_norm` e `ey_norm` |
+| `REQUEST_SAFE_LANDING_ZONE` | solicitar/validar região segura |
+| `LAND_SAFE_ZONE` | pousar na zona previamente validada |
+| `ABORT` | interromper missão |
+| `MISSION_COMPLETE` | missão concluída |
+
+A detecção humana **não autoriza pouso sobre a pessoa**. A FSM só entra em `LAND` depois de receber `safe_landing_zone_ready=True` de uma camada externa.
+
+## Status da POC de vídeo
 
 | Item | Resultado |
 |---|---:|
@@ -47,255 +150,12 @@ frame -> YOLO11n -> classe person
 
 ## Relatórios para estudo e apresentação
 
-Dois PDFs consolidam a entrega:
+Dois PDFs consolidam a primeira entrega:
 
-- [**Relatório Técnico - HARPia YOLO Person Detection POC**](docs/reports/Relatorio_Tecnico_HARPia_YOLO_POC.pdf) - contexto, arquitetura, metodologia, resultados, benchmark, limitações e roteiro de apresentação.
-- [**Guia de Estudo do Código - HARPia YOLO**](docs/reports/Guia_Estudo_Codigo_HARPia_YOLO.pdf) - leitura orientada do código, funções-chave, fluxo de dados, bounding boxes, métricas, logs, H.264 e perguntas técnicas para defesa.
+- [**Relatório Técnico - HARPia YOLO Person Detection POC**](docs/reports/Relatorio_Tecnico_HARPia_YOLO_POC.pdf)
+- [**Guia de Estudo do Código - HARPia YOLO**](docs/reports/Guia_Estudo_Codigo_HARPia_YOLO.pdf)
 
-Índice dos materiais: [`docs/reports/README.md`](docs/reports/README.md).
-
-## Por que YOLO11n?
-
-YOLO11n e YOLO11s foram comparados nos mesmos primeiros 60 frames, com `imgsz=640`, `conf=0.25`, `device=cpu` e filtro da classe `person`.
-
-| Métrica | YOLO11n | YOLO11s |
-|---|---:|---:|
-| FPS de processamento | 1,473 | 1,042 |
-| Tempo médio/frame | 678,9 ms | 959,8 ms |
-| Inferência YOLO | 568,9 ms | 862,5 ms |
-| Detecções | 425 | 422 |
-| Confiança média | 0,5533 | 0,5887 |
-| Tamanho do peso | 5,35 MB | 18,42 MB |
-
-No hardware atual, YOLO11s consumiu cerca de **1,41x mais tempo por frame** e é **3,44x maior**, sem aumento no total de detecções no trecho comparado. Por isso, **YOLO11n é o baseline recomendado**.
-
-Detalhes: [`docs/results.md`](docs/results.md).
-
-## Ambiente validado
-
-- Intel Core i3-3217U @ 1.80 GHz;
-- 2 núcleos físicos / 4 threads;
-- sem GPU NVIDIA;
-- CUDA desabilitado;
-- Python 3.10.12;
-- PyTorch CPU;
-- Ultralytics 8.4.158;
-- OpenCV 5.0.0;
-- ambiente YOLO: `/root/yolo_venv`.
-
-O detector desabilita NNPACK quando disponível para evitar warnings de backend não suportado nessa CPU antiga. Isso **não** desabilita a inferência em CPU e não tem relação com CUDA.
-
-## Uso rápido no HARPia
-
-```bash
-cd /root/harpia_ws/src/yolo-inference
-```
-
-### 1. Baixar o vídeo reproduzível
-
-```bash
-./scripts/download_video.sh
-```
-
-A entrada é salva em `input/people_cc.mp4` e permanece fora do Git.
-
-### 2. Smoke test de 60 frames
-
-```bash
-./scripts/run_video_poc.sh test
-```
-
-### 3. Execução completa
-
-```bash
-./scripts/run_video_poc.sh full
-```
-
-### 4. Regenerar apenas vídeo web + painel
-
-Se a inferência completa já foi executada:
-
-```bash
-./scripts/run_video_poc.sh report
-```
-
-Esse modo **não executa YOLO novamente**. Ele reutiliza o MP4 anotado e as métricas existentes.
-
-## Visual e logs
-
-O runner grava logs timestampados em:
-
-```text
-logs/video_poc_<modo>_<timestamp>.log
-```
-
-Para acompanhar o log mais recente em outro terminal:
-
-```bash
-./scripts/watch_video_log.sh
-```
-
-Após `test`, `full` ou `report`, o painel fica em:
-
-```text
-output/video_report.html
-```
-
-Sirva o repositório localmente:
-
-```bash
-/root/yolo_venv/bin/python -m http.server 8000 --bind 0.0.0.0
-```
-
-Abra no navegador:
-
-```text
-http://localhost:8000/output/video_report.html
-```
-
-O painel reúne:
-
-- vídeo anotado;
-- bounding boxes e labels `person`;
-- métricas da execução;
-- benchmark YOLO11n x YOLO11s;
-- frames de evidência;
-- trecho final do log.
-
-Mais detalhes: [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md).
-
-## Compatibilidade do vídeo no navegador
-
-O detector grava o MP4 anotado com OpenCV usando `mp4v`. Como esse codec pode falhar em navegadores, o runner converte o resultado para:
-
-```text
-output/yolo11n_people_web.mp4
-```
-
-A conversão usa:
-
-- H.264 / `libx264`;
-- `yuv420p`;
-- `+faststart`;
-- `imageio-ffmpeg` dentro do ambiente Python.
-
-As bounding boxes já estão desenhadas nos frames antes da conversão, portanto a transcodificação **preserva as detecções** e não roda YOLO novamente.
-
-## Detector de vídeo
-
-Execução direta, sem o runner:
-
-```bash
-/root/yolo_venv/bin/python scripts/detect_people.py \
-  --input input/people_cc.mp4 \
-  --output output/yolo11n_people.mp4 \
-  --model yolo11n.pt \
-  --imgsz 640 \
-  --conf 0.25 \
-  --device cpu \
-  --metrics results/yolo11n_metrics.json \
-  --examples 3 \
-  --examples-dir results/examples
-```
-
-Argumentos principais:
-
-```text
---input            vídeo de entrada
---output           vídeo anotado de saída
---model            peso YOLO; padrão yolo11n.pt
---imgsz            tamanho da entrada; padrão 640
---conf             confiança mínima; padrão 0.25
---device           dispositivo; padrão cpu
---max-frames       limita frames para smoke tests
---metrics          JSON de métricas
---examples         quantidade de frames representativos
---examples-dir     diretório dos frames de exemplo
---progress-every   frequência das mensagens de progresso
-```
-
-A classe `person` é encontrada programaticamente em `model.names`; o pipeline não depende de um número mágico espalhado no código.
-
-## Inferência em imagem estática
-
-```bash
-python inference.py imagem.jpg \
-  --model yolo11n.pt \
-  --device cpu \
-  --imgsz 640 \
-  --conf 0.25 \
-  --output resultado.jpg \
-  --json-output resultado.json
-```
-
-Além de classe, confiança e bbox, esse fluxo calcula `cx`, `cy`, `ex` e `ey`, deixando explícito o erro do centro da detecção em relação ao centro da imagem.
-
-No HARPia também existe:
-
-```bash
-./scripts/run_harpia.sh /root/harpia_ws/src/HARPia_YOLO_Export/camera_5m.jpg
-```
-
-Mais detalhes: [`docs/HARPIA.md`](docs/HARPIA.md).
-
-## Evidências versionadas
-
-A execução completa selecionou automaticamente três frames representativos:
-
-| Frame 252 | Frame 269 | Frame 350 |
-|---|---|---|
-| ![Frame 252](results/examples/frame_000252.jpg) | ![Frame 269](results/examples/frame_000269.jpg) | ![Frame 350](results/examples/frame_000350.jpg) |
-
-O critério prioriza mais pessoas detectadas e, em caso de empate, maior soma das confidências.
-
-## Estrutura principal
-
-```text
-.
-├── inference.py
-├── visual_report.py
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── HARPIA.md
-│   ├── OBSERVABILITY.md
-│   ├── results.md
-│   └── reports/
-│       ├── README.md
-│       ├── Relatorio_Tecnico_HARPia_YOLO_POC.pdf
-│       └── Guia_Estudo_Codigo_HARPia_YOLO.pdf
-├── input/
-├── output/
-├── results/
-│   ├── comparison.csv
-│   ├── video_metadata.json
-│   ├── video_source.json
-│   ├── yolo11n_metrics.json
-│   ├── yolo11n_test60_metrics.json
-│   ├── yolo11s_test60_metrics.json
-│   └── examples/
-├── scripts/
-│   ├── detect_people.py
-│   ├── download_video.sh
-│   ├── run_video_poc.sh
-│   ├── watch_video_log.sh
-│   ├── video_report.py
-│   ├── transcode_web_video.py
-│   ├── setup.sh
-│   └── run_harpia.sh
-└── tests/
-```
-
-## O que não é versionado
-
-O `.gitignore` mantém fora do repositório:
-
-- pesos `*.pt`;
-- vídeos de entrada e saída;
-- painel HTML local;
-- logs temporários;
-- caches e ambientes virtuais.
-
-Métricas, CSV, documentação, frames de evidência e relatórios de estudo permanecem versionados para auditoria e apresentação.
+A documentação da Fase 2 será incorporada ao relatório consolidado depois da validação no Gazebo.
 
 ## Desenvolvimento e CI
 
@@ -305,17 +165,7 @@ ruff check .
 pytest
 ```
 
-O GitHub Actions executa verificações leves sem baixar pesos e sem rodar inferência pesada.
-
-## Limitações
-
-- hardware antigo e CPU-only;
-- inferência offline no hardware testado;
-- sem tracking de identidade;
-- sem ground truth anotado para medir precision, recall ou mAP no vídeo;
-- pesos COCO genéricos, sem fine-tuning específico para o HARPia;
-- benchmark prático entre dois modelos, não benchmark científico abrangente;
-- sem integração operacional com controle PX4 nesta etapa.
+A suíte da Fase 2 cobre geometria normalizada, IoU, continuidade do alvo, espiral quadrada, transições da máquina de estados, perda de alvo, limite de busca, abort e gate de pouso seguro.
 
 ## Próximos passos
 
@@ -325,17 +175,16 @@ O GitHub Actions executa verificações leves sem baixar pesos e sem rodar infer
 - [x] benchmark YOLO11n x YOLO11s;
 - [x] logs e painel local;
 - [x] vídeo H.264 compatível com navegador;
-- [x] documentação técnica e guia de estudo do código;
-- [ ] entrada contínua da câmera do HARPia;
+- [x] seleção leve de alvo por verossimilhança;
+- [x] espiral quadrada de busca;
+- [x] FSM sem dependência PX4;
+- [x] simulador lógico da missão;
+- [ ] validar ator humano no Gazebo;
+- [ ] conectar câmera contínua do HARPia ao seletor;
 - [ ] medir latência ponta a ponta da câmera;
-- [ ] nó ROS 2 persistente;
-- [ ] publicação de detecções e imagem de debug;
-- [ ] dataset específico e ground truth;
-- [ ] fine-tuning quando houver dados adequados;
-- [ ] seleção de alvo;
-- [ ] controle PX4 somente após validação suficiente da percepção.
-
-A separação entre percepção e futura integração ROS 2 está documentada em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+- [ ] publicar `ActionDecision` para o adaptador PX4;
+- [ ] validar zona de pouso segura;
+- [ ] integração PX4 mantida pela frente responsável pelo controle.
 
 ## Licença
 
