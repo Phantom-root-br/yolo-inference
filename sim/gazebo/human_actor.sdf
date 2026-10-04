@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <actor name="harpia_human_target">
+    <pose>0 0 1.0 0 0 0</pose>
+    <skin>
+      <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
+      <scale>1.0</scale>
+    </skin>
+    <animation name="walk">
+      <filename>https://fuel.gazebosim.org/1.0/Mingfei/models/actor/tip/files/meshes/walk.dae</filename>
+      <interpolate_x>true</interpolate_x>
+    </animation>
+  </actor>
+</sdf>
