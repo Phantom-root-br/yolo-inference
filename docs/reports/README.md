@@ -1,50 +1,31 @@
 # Relatórios - HARPia YOLO
 
-Esta pasta contém materiais consolidados para **estudo, apresentação e auditoria** da prova de conceito de detecção de pessoas com YOLO no HARPia.
+Esta pasta contém materiais consolidados para **estudo, apresentação e auditoria** do projeto de percepção com YOLO no HARPia.
 
 ## 1. Relatório Técnico da POC
 
 [`Relatorio_Tecnico_HARPia_YOLO_POC.pdf`](Relatorio_Tecnico_HARPia_YOLO_POC.pdf)
 
-Use este documento para explicar:
-
-- objetivo e escopo da tarefa;
-- arquitetura da POC;
-- ambiente HARPia validado;
-- metodologia experimental;
-- resultados completos do YOLO11n;
-- diferença entre FPS da fonte e FPS de processamento;
-- benchmark YOLO11n x YOLO11s;
-- decisão de manter YOLO11n como baseline;
-- evidências, logs, observabilidade e workflow GitHub;
-- limitações, riscos e próximos passos;
-- roteiro curto para apresentação.
+Cobre a primeira fase: contexto, arquitetura, ambiente HARPia, metodologia, resultados, benchmark, observabilidade e limitações.
 
 ## 2. Guia de Estudo do Código
 
 [`Guia_Estudo_Codigo_HARPia_YOLO.pdf`](Guia_Estudo_Codigo_HARPia_YOLO.pdf)
 
-Use este documento quando precisar abordar a implementação:
+Cobre a implementação da primeira fase: inferência, vídeo, métricas, logs, H.264 e painel local.
 
-- responsabilidades dos arquivos principais;
-- CLI e validação de argumentos;
-- carregamento do YOLO e tratamento de NNPACK;
-- descoberta programática da classe `person`;
-- loop frame a frame;
-- extração de `bbox` e `confidence`;
-- função que desenha bounding boxes;
-- `VideoWriter` e preservação do FPS original;
-- seleção de frames de evidência com heap;
-- cálculo e serialização das métricas;
-- modos `test`, `full` e `report`;
-- logs com `tee` e `PIPESTATUS`;
-- transcodificação MP4V -> H.264;
-- geração do painel HTML;
-- perguntas técnicas prováveis e respostas sugeridas.
+## Fase 2 em desenvolvimento
 
-## Como usar os dois juntos
+A lógica de missão orientada pela percepção está documentada em [`../MISSION_FSM.md`](../MISSION_FSM.md) e será incorporada a um novo relatório consolidado depois da validação no Gazebo.
 
-- **Relatório Técnico:** responde **o que foi feito, por que e quais resultados foram obtidos**.
-- **Guia do Código:** responde **como foi implementado e onde cada decisão aparece no código**.
+A Fase 2 inclui:
 
-Os valores experimentais continuam documentados em [`../results.md`](../results.md), e o fluxo de visualização/logs está em [`../OBSERVABILITY.md`](../OBSERVABILITY.md).
+- ator humano de teste no Gazebo;
+- seleção de alvo por verossimilhança;
+- erro visual normalizado;
+- espiral quadrada crescente de busca;
+- máquina de estados `PREFLIGHT -> TAKEOFF -> SEARCH -> ACQUIRE -> TRACK -> APPROACH -> STABILIZE -> LAND_ZONE_SELECT -> LAND -> COMPLETE`;
+- contrato explícito de `ActionDecision` para handoff ao responsável pelo PX4;
+- testes unitários e simulador lógico sem comandos de voo reais.
+
+Os PDFs anteriores permanecem válidos como documentação da primeira entrega.
