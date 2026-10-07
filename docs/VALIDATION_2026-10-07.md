@@ -57,10 +57,9 @@ visual_target_lead_sec     = 0.0
 
 A new bbox replaces the previous target immediately.
 
-## End-to-end simulation result
+## End-to-end simulation status
 
-The final HARPia simulation run was accepted as successful by the operator and
-completed the intended mission sequence:
+The latest run completed the perception and navigation sequence through:
 
 ```text
 TARGET_LOCKED
@@ -71,16 +70,28 @@ TRACK_LOW_30S_COMPLETE
 ASCEND_TRACK_COMPLETE
 RETURN_HOME_COMPLETE
 LANDED
+```
+
+The mission did **not** complete the final state transition. After `LANDED`,
+the FSM entered `DISARM`, did not observe a confirmed disarmed state within
+the timeout, and transitioned to `ERROR_HOLD`.
+
+A second independent issue was observed in the same run: the annotated-camera
+viewer window did not open. The detector and mission still consumed camera
+frames, so this is treated as a viewer/UI transport problem rather than proof
+that perception was unavailable.
+
+The end-to-end simulation milestone therefore remains open until one run proves:
+
+```text
+...
+RETURN_HOME_COMPLETE
+LANDED
 VEHICLE_DISARMED
 MISSION_COMPLETE
 ```
 
-One non-mission issue remained in that run: the separate annotated-camera
-viewer window did not open. The perception/control mission itself still
-completed, so this is tracked as a visualization/UI issue rather than an
-end-to-end mission failure.
-
-This closes the **simulation** integration milestone only. Before real flight,
-repeat model validation on real imagery, rebuild the dataset with real
-top-down humans, and revalidate thresholds, camera-axis signs, PX4 control
-limits, landing/disarm behavior and failsafes in a controlled environment.
+Before real flight, repeat model validation on real imagery, rebuild the
+dataset with real top-down humans, and revalidate thresholds, camera-axis
+signs, PX4 control limits, landing/disarm behavior and failsafes in a
+controlled environment.
