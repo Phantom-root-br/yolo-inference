@@ -12,6 +12,23 @@ Percepção de pessoas com YOLO para o projeto **HARPia**, incluindo:
 
 [![CI](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml/badge.svg)](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml)
 
+> **Release Candidate - 07/10/2026**  
+> O pipeline ROS 2 de percepção, TARGET_LOCKED e controle visual está integrado.
+> A PR de handoff é a **#8**. O merge/tag final fica condicionado ao último teste
+> end-to-end confirmar `PERSON_CENTERED -> TRACK_HIGH_30S -> 1 m ->
+> TRACK_LOW_30S -> RETURN_HOME -> LAND -> DISARM -> MISSION_COMPLETE`.
+> O modelo atual é de **simulação top-down** e não deve ser tratado como modelo
+> validado para voo real.
+
+### Atalhos
+
+- **Rodar em outra máquina/câmera:** [docs/ROS2_PORTABILITY.md](docs/ROS2_PORTABILITY.md)
+- **Ajustar detecção e servo visual:** [docs/TUNING.md](docs/TUNING.md)
+- **Coletar dados reais e retreinar:** [docs/RETRAINING.md](docs/RETRAINING.md)
+- **Snapshot de validação:** [docs/VALIDATION_2026-10-07.md](docs/VALIDATION_2026-10-07.md)
+- **Integração HARPia/PX4:** [integration/harpia/README.md](integration/harpia/README.md)
+- **Perfil de missão atual:** [integration/harpia/mission_sim.yaml](integration/harpia/mission_sim.yaml)
+
 ## Arquitetura atual
 
 A separação principal é intencional:
