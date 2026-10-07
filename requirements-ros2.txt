@@ -1,0 +1,4 @@
+# Python-side dependencies for the portable detector.
+# ROS 2 Python packages (rclpy, sensor_msgs, cv_bridge) come from ROS itself.
+ultralytics==8.4.158
+opencv-python>=4.10,<5
