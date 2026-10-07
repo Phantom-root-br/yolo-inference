@@ -209,22 +209,21 @@ def patch_mission(path: Path) -> bool:
         )
 
     # The local HARPia mission evolved during integration and the
-    # decorative comment block before COMPLETE is not stable.  Anchor the
-    # replacement on executable FSM code instead of formatting/comments.
-    complete_match = re.search(
-        r"(?m)^        if self\\.state == State\\.COMPLETE:\\s*$",
-        text[start:],
+    # decorative comment block before COMPLETE is not stable. Anchor the
+    # replacement directly on executable FSM code.
+    complete_marker = (
+        "        if self.state == State.COMPLETE:"
     )
 
-    if complete_match is None:
+    end = text.find(
+        complete_marker,
+        start,
+    )
+
+    if end < 0:
         raise RuntimeError(
             "State.COMPLETE block not found after State.DISARM"
         )
-
-    end = (
-        start
-        + complete_match.start()
-    )
 
     current = text[start:end]
 
