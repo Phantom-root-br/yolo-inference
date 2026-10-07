@@ -106,3 +106,39 @@ MISSION_COMPLETE
 
 These events are integration surfaces for a UI, logger, supervisor or higher
 level state machine.
+
+
+## Final runtime fixes
+
+The last end-to-end run validated the perception/navigation path through
+`LANDED`, but exposed two final runtime issues:
+
+1. the normal PX4 DISARM command did not confirm and the FSM entered
+   `ERROR_HOLD`;
+2. the annotated camera GUI was skipped because a full-image
+   `ros2 topic echo --once` readiness gate lost messages and timed out.
+
+The repository now contains the runtime fix kit in
+[`integration/harpia/runtime/`](runtime/README.md).
+
+Apply and rebuild the current HARPia workspace:
+
+```bash
+cd /root/harpia_ws/src/yolo-inference
+git pull
+
+export HARPIA_WS=/root/harpia_ws
+export YOLO_REPO=$HARPIA_WS/src/yolo-inference
+
+bash $YOLO_REPO/integration/harpia/runtime/apply_and_build.sh
+```
+
+Run HARPia with the independent annotated-camera viewer:
+
+```bash
+bash $YOLO_REPO/integration/harpia/runtime/run_harpia_yolo_with_viewer.sh
+```
+
+The DISARM fallback is deliberately **simulation-only**. The portable mission
+parameter defaults to disabled; the HARPia simulation launcher explicitly
+enables it after a confirmed `LANDED` state.
