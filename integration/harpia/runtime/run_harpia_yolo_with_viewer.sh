@@ -11,11 +11,14 @@ if [[ ! -f "$RUN_SCRIPT" ]]; then
   exit 2
 fi
 
+# ROS setup scripts are not compatible with nounset in all environments.
+set +u
 source /opt/ros/humble/setup.bash
 
 if [[ -f "$WS/install/setup.bash" ]]; then
   source "$WS/install/setup.bash"
 fi
+set -u
 
 bash "$RUN_SCRIPT"
 
