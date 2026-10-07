@@ -15,8 +15,8 @@ Fixes:
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import re
+from pathlib import Path
 
 
 PARAM_BLOCK = """        # Simulation-only post-landing DISARM fallback.
