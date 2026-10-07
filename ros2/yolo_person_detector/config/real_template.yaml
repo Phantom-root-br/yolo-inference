@@ -1,0 +1,18 @@
+yolo_person_detector:
+  ros__parameters:
+    model_path: "/absolute/path/to/person_model.pt"
+    input_topic: "/camera/image_raw"
+    annotated_topic: "/yolo/image_annotated"
+    detection_topic: "/yolo/person_detection"
+    detections_topic: "/yolo/person_detections"
+    detected_topic: "/yolo/person_detected"
+
+    # Start conservative on real imagery and calibrate on a validation set.
+    confidence_threshold: 0.10
+    imgsz: 640
+    iou_threshold: 0.45
+    max_det: 10
+    device: "cpu"
+    class_name: "person"
+    publish_annotated: true
+    log_every_n_frames: 30

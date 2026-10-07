@@ -1,0 +1,30 @@
+name: ROS2 static checks
+
+on:
+  push:
+    paths:
+      - "ros2/**"
+      - "integration/**"
+      - "scripts/train_topdown_person.py"
+      - ".github/workflows/ros2-static.yml"
+  pull_request:
+    paths:
+      - "ros2/**"
+      - "integration/**"
+      - "scripts/train_topdown_person.py"
+      - ".github/workflows/ros2-static.yml"
+
+jobs:
+  python-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Compile Python sources
+        run: |
+          python -m py_compile             ros2/yolo_person_detector/yolo_person_detector/detector_node.py             ros2/yolo_person_detector/launch/detector.launch.py             ros2/yolo_person_detector/setup.py             scripts/train_topdown_person.py
+      - name: Shell syntax
+        run: |
+          bash -n integration/harpia/run_detector.sh

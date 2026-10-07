@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>yolo_person_interfaces</name>
+  <version>0.1.0</version>
+  <description>Typed ROS 2 interfaces for HARPia YOLO person detection.</description>
+  <maintainer email="noreply@example.com">HARPia Team</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+  <depend>std_msgs</depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <member_of_group>rosidl_interface_packages</member_of_group>
+</package>

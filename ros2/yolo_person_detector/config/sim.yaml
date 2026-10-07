@@ -1,0 +1,18 @@
+yolo_person_detector:
+  ros__parameters:
+    model_path: "models/harpia_person_topdown_pilot_v2.pt"
+    input_topic: "/camera/image_raw"
+    annotated_topic: "/yolo/image_annotated"
+    detection_topic: "/yolo/person_detection"
+    detections_topic: "/yolo/person_detections"
+    detected_topic: "/yolo/person_detected"
+
+    # Low candidate threshold improves recall. Mission lock stays higher.
+    confidence_threshold: 0.05
+    imgsz: 512
+    iou_threshold: 0.45
+    max_det: 10
+    device: "cpu"
+    class_name: "person"
+    publish_annotated: true
+    log_every_n_frames: 30

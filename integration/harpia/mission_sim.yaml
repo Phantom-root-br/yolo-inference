@@ -1,0 +1,30 @@
+yolo_person_mission:
+  ros__parameters:
+    flight_altitude_m: 4.0
+    low_altitude_m: 1.0
+
+    # Acquisition vs maintenance hysteresis.
+    confirmation_confidence: 0.10
+    confirmation_frames: 1
+    tracking_min_confidence: 0.05
+    detection_max_age_sec: 4.0
+
+    track_duration_sec: 30.0
+    low_track_duration_sec: 30.0
+
+    spiral_step_m: 2.0
+    spiral_max_radius_m: 4.0
+
+    # Latest bbox should drive the controller immediately.
+    bbox_ema_alpha: 1.0
+    visual_target_alpha: 1.0
+    visual_target_lead_sec: 0.0
+
+    visual_servo_gain: 1.8
+    visual_target_max_update_m: 3.5
+    alignment_hold_sec: 0.5
+    vertical_tolerance_m: 0.25
+
+    # Current simulation camera mounting.
+    local_x_from_image_y_sign: -1.0
+    local_y_from_image_x_sign: 1.0
