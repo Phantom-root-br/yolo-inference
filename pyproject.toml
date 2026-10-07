@@ -10,3 +10,8 @@ ignore = ["E501"]
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["."]
+
+
+[tool.ruff.lint.per-file-ignores]
+"integration/harpia/runtime/apply_final_runtime_fixes.py" = ["I001"]
+"ros2/yolo_person_detector/yolo_person_detector/detector_node.py" = ["I001"]
