@@ -11,7 +11,11 @@ fi
 
 "$PYTHON_BIN"   "$REPO/integration/harpia/runtime/apply_final_runtime_fixes.py"   --workspace "$WS"
 
+# ROS setup scripts reference variables that may be unset. Temporarily disable
+# nounset while sourcing them, then restore strict mode.
+set +u
 source /opt/ros/humble/setup.bash
+set -u
 
 cd "$WS"
 
