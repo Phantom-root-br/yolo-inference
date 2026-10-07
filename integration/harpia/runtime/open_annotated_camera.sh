@@ -9,11 +9,14 @@ if [[ ! -x "$PYTHON_BIN" ]]; then
   PYTHON_BIN="$(command -v python3)"
 fi
 
+# ROS setup scripts are not compatible with nounset in all environments.
+set +u
 source /opt/ros/humble/setup.bash
 
 if [[ -f "$WS/install/setup.bash" ]]; then
   source "$WS/install/setup.bash"
 fi
+set -u
 
 if [[ -z "${DISPLAY:-}" ]]; then
   export DISPLAY=:1
