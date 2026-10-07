@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import time
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+import time
+from typing import Iterable, List, Tuple
 
-import cv2
 import rclpy
 from cv_bridge import CvBridge
 from rclpy.node import Node
