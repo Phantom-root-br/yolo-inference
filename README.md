@@ -57,6 +57,41 @@ de uma imagem ROS 2 e pode ser movido para outra máquina, câmera ou robô.
 
 Detalhes: [docs/ROS2_PORTABILITY.md](docs/ROS2_PORTABILITY.md).
 
+## Reprodutibilidade
+
+Há dois níveis diferentes de reprodução:
+
+| Escopo | Clone de `yolo-inference` sozinho? | Observação |
+|---|---|---|
+| Detector YOLO ROS 2 portátil | **Quase** | precisa fornecer um peso `.pt` compatível |
+| Treinamento / retraining | **Sim** | dataset é externo por definição |
+| Missão HARPia completa em Gazebo/PX4 | **Não, ainda** | depende do workspace HARPia, PX4 e `simulation_bringup_eletroquad26` |
+
+O repositório contém o detector, interfaces, configurações, documentação,
+tuning, política de evolução do modelo e o kit de integração/runtime HARPia.
+
+Para reproduzir **exatamente a simulação completa**, a máquina também precisa
+ter:
+
+```text
+ROS 2 Humble
+PX4-Autopilot / px4_msgs
+Gazebo Garden + ros_gz_bridge
+simulation_bringup_eletroquad26
+mundo/modelo/câmera HARPia usados na simulação
+peso harpia_person_topdown_pilot_v2.pt
+```
+
+Os scripts em `integration/harpia/runtime/` assumem o layout do workspace
+validado em `/root/harpia_ws`, mas aceitam `HARPIA_WS` e `YOLO_REPO` para
+outros caminhos.
+
+**Importante:** o peso customizado e os assets do simulador não devem ser
+inferidos a partir do README; eles precisam ser distribuídos/versionados
+explicitamente. Até esses artefatos serem publicados junto da release, o
+repositório é reprodutível para a camada YOLO, mas não é ainda um
+`clone && run` da missão completa.
+
 ## Estado atual da integração HARPia
 
 Fluxo operacional desejado:
