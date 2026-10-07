@@ -208,20 +208,23 @@ def patch_mission(path: Path) -> bool:
             "DISARM state block not found"
         )
 
-    complete_marker = (
-        "        # -----------------------------------------------------\n"
-        "        # COMPLETE"
+    # The local HARPia mission evolved during integration and the
+    # decorative comment block before COMPLETE is not stable.  Anchor the
+    # replacement on executable FSM code instead of formatting/comments.
+    complete_match = re.search(
+        r"(?m)^        if self\\.state == State\\.COMPLETE:\\s*$",
+        text[start:],
     )
 
-    end = text.find(
-        complete_marker,
-        start,
-    )
-
-    if end < 0:
+    if complete_match is None:
         raise RuntimeError(
-            "COMPLETE marker not found after DISARM"
+            "State.COMPLETE block not found after State.DISARM"
         )
+
+    end = (
+        start
+        + complete_match.start()
+    )
 
     current = text[start:end]
 
