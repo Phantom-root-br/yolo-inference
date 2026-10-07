@@ -1,7 +1,8 @@
 # Validation snapshot — 2026-10-07
 
-This document records the simulation state validated on 2026-10-07 for the
-current portable configuration. It is **not** a real-flight qualification report.
+This document records the simulation state observed on 2026-10-07 for the
+current portable configuration. The final mission sequence is still under
+validation. It is **not** a real-flight qualification report.
 
 ## What is already working
 
@@ -56,10 +57,22 @@ visual_target_lead_sec     = 0.0
 
 A new bbox replaces the previous target immediately.
 
-## End-to-end simulation result
+## End-to-end simulation status
 
-The final HARPia simulation run was accepted as successful by the operator,
-closing the simulation integration milestone through the intended sequence:
+The perception and visual-lock pipeline is integrated, but the latest run did
+**not yet prove completion of the entire mission**. In particular, the log
+ended before a confirmed:
+
+```text
+ASCEND_TRACK_COMPLETE
+RETURN_HOME_COMPLETE
+LANDED
+VEHICLE_DISARMED
+MISSION_COMPLETE
+```
+
+Therefore the simulation milestone remains open until one continuous run
+demonstrates the intended sequence:
 
 ```text
 TARGET_LOCKED
@@ -74,7 +87,7 @@ VEHICLE_DISARMED
 MISSION_COMPLETE
 ```
 
-This closes the **simulation** milestone only. Before real flight, repeat model
-validation on real imagery, rebuild the dataset with real top-down humans, and
-revalidate thresholds, camera-axis signs, PX4 control limits, landing/disarm
-behavior and failsafes in a controlled environment.
+Before real flight, repeat model validation on real imagery, rebuild the dataset
+with real top-down humans, and revalidate thresholds, camera-axis signs, PX4
+control limits, landing/disarm behavior and failsafes in a controlled
+environment.
