@@ -39,3 +39,6 @@ jobs:
           bash -n integration/harpia/runtime/open_annotated_camera.sh
           bash -n integration/harpia/runtime/run_harpia_yolo_with_viewer.sh
           bash -n integration/harpia/runtime/apply_and_build.sh
+          bash -n integration/harpia/runtime/preflight.sh
+          bash -n integration/harpia/runtime/monitor_mission.sh
+          bash -n integration/harpia/runtime/run_from_zero.sh
