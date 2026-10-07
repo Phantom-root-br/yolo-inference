@@ -12,20 +12,21 @@ Percepção de pessoas com YOLO para o projeto **HARPia**, incluindo:
 
 [![CI](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml/badge.svg)](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml)
 
-> **Integração validada em simulação - 07/10/2026**  
+> **Integração quase fechada em simulação - 07/10/2026**  
 > O pipeline ROS 2 de percepção, TARGET_LOCKED, centralização/tracking visual,
-> subida, RETURN_HOME, LAND e DISARM foi concluído no último teste end-to-end.
-> A única pendência observada nessa execução foi a **janela de visualização da
-> câmera anotada**, que não abriu; isso é tratado como problema de viewer/UI,
-> separado da missão e da percepção que permaneceram operacionais.
-> O modelo atual continua sendo de **simulação top-down** e não deve ser tratado
-> como modelo validado para voo real sem novo dataset, calibração e testes de campo.
+> subida, RETURN_HOME e LAND foi executado com sucesso. O último run chegou a
+> `LANDED`, mas o comando de **DISARM não confirmou** e a FSM entrou em
+> `ERROR_HOLD`. A janela separada da câmera anotada também não abriu nesse run.
+> Esses dois pontos permanecem como pendências explícitas antes de marcar a
+> missão end-to-end como concluída. O modelo atual continua sendo de
+> **simulação top-down** e não deve ser tratado como modelo validado para voo real.
 
 ### Atalhos
 
 - **Rodar em outra máquina/câmera:** [docs/ROS2_PORTABILITY.md](docs/ROS2_PORTABILITY.md)
 - **Ajustar detecção e servo visual:** [docs/TUNING.md](docs/TUNING.md)
 - **Coletar dados reais e retreinar:** [docs/RETRAINING.md](docs/RETRAINING.md)
+- **Evoluir o modelo sem quebrar a integração:** [docs/MODEL_UPGRADE_POLICY.md](docs/MODEL_UPGRADE_POLICY.md)
 - **Snapshot de validação:** [docs/VALIDATION_2026-10-07.md](docs/VALIDATION_2026-10-07.md)
 - **Integração HARPia/PX4:** [integration/harpia/README.md](integration/harpia/README.md)
 - **Perfil de missão atual:** [integration/harpia/mission_sim.yaml](integration/harpia/mission_sim.yaml)
