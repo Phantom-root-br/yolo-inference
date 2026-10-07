@@ -57,6 +57,25 @@ de uma imagem ROS 2 e pode ser movido para outra máquina, câmera ou robô.
 
 Detalhes: [docs/ROS2_PORTABILITY.md](docs/ROS2_PORTABILITY.md).
 
+## Executar a demo HARPia em um comando
+
+Em uma máquina que já tenha o workspace HARPia/PX4 e o modelo customizado, o
+fluxo recomendado para qualquer membro da equipe é:
+
+```bash
+cd /root/harpia_ws/src/yolo-inference
+git pull
+
+bash integration/harpia/runtime/run_from_zero.sh
+```
+
+Esse comando faz preflight, aplica a integração, builda, inicia
+PX4/Gazebo/bridge/YOLO/missão, abre a câmera anotada e **continua exibindo os
+estados da missão até `MISSION_COMPLETE` ou `ERROR_HOLD`**.
+
+Guia completo:
+[docs/REPRODUCE_HARPIA_DEMO.md](docs/REPRODUCE_HARPIA_DEMO.md).
+
 ## Reprodutibilidade
 
 Há dois níveis diferentes de reprodução:
