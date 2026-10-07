@@ -29,7 +29,7 @@ Percepção de pessoas com YOLO para o projeto **HARPia**, incluindo:
 - **Evoluir o modelo sem quebrar a integração:** [docs/MODEL_UPGRADE_POLICY.md](docs/MODEL_UPGRADE_POLICY.md)
 - **Snapshot de validação:** [docs/VALIDATION_2026-10-07.md](docs/VALIDATION_2026-10-07.md)
 - **Integração HARPia/PX4:** [integration/harpia/README.md](integration/harpia/README.md)
-- **Perfil de missão atual:** [integration/harpia/mission_sim.yaml](integration/harpia/mission_sim.yaml)
+- **Perfil de missão atual:** [integration/harpia/mission_sim.yaml](integration/harpia/mission_sim.yaml)\n- **Correções finais de DISARM + viewer:** [integration/harpia/runtime/README.md](integration/harpia/runtime/README.md)
 
 ## Arquitetura atual
 
