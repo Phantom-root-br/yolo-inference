@@ -35,6 +35,8 @@ class AnnotatedCameraViewer(Node):
         self.first_frame = True
         self.last_frame_monotonic = 0.0
         self.frames = 0
+        self.has_shown_frame = False
+        self.shutdown_requested = False
 
         qos = QoSProfile(
             history=HistoryPolicy.KEEP_LAST,
@@ -53,6 +55,11 @@ class AnnotatedCameraViewer(Node):
         cv2.namedWindow(
             self.window,
             cv2.WINDOW_NORMAL,
+        )
+
+        self.create_timer(
+            0.05,
+            self._poll_gui,
         )
 
         self.get_logger().info(
@@ -93,10 +100,49 @@ class AnnotatedCameraViewer(Node):
             frame,
         )
 
+        self.has_shown_frame = True
+
+    def _request_shutdown(self, reason: str) -> None:
+        if self.shutdown_requested:
+            return
+
+        self.shutdown_requested = True
+
+        self.get_logger().info(
+            f"viewer closing: {reason}"
+        )
+
+        try:
+            cv2.destroyWindow(self.window)
+        except cv2.error:
+            pass
+
+        if rclpy.ok():
+            rclpy.shutdown()
+
+    def _poll_gui(self) -> None:
+        # waitKey is required for OpenCV/Qt to process native window events.
         key = cv2.waitKey(1) & 0xFF
 
         if key in (27, ord("q")):
-            rclpy.shutdown()
+            self._request_shutdown("keyboard")
+            return
+
+        if not self.has_shown_frame:
+            return
+
+        try:
+            visible = cv2.getWindowProperty(
+                self.window,
+                cv2.WND_PROP_VISIBLE,
+            )
+        except cv2.error:
+            visible = 0.0
+
+        # Clicking the window-manager X destroys/hides the native window.
+        # Without this check, the next cv2.imshow() recreates it.
+        if visible < 1.0:
+            self._request_shutdown("window closed")
 
 
 def parse_args() -> argparse.Namespace:
