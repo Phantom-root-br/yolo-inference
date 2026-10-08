@@ -13,6 +13,10 @@ echo "workspace : $WS"
 echo "repo      : $REPO"
 echo
 
+echo "===== HOST CHECK ====="
+bash "$RUNTIME/check_host.sh"
+
+echo
 echo "===== BOOTSTRAP DISTRIBUTED STACK ====="
 bash "$RUNTIME/bootstrap_workspace.sh"
 
