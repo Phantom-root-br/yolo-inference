@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version='1.10'>
+<model name='hose'>
+  <link name='hose_link'>
+    <enable_wind>false</enable_wind>
+    <collision name='hose_collision'>
+      <geometry><cylinder>
+        <radius>0.00635</radius>
+        <length>6.48</length>
+      </cylinder></geometry>
+      <surface>
+        <friction><ode/></friction>
+        <bounce/>
+        <contact/>
+      </surface>
+    </collision>
+    <visual name='hose_visual'>
+      <geometry><cylinder>
+        <radius>0.00635</radius>
+        <length>6.48</length>
+      </cylinder></geometry>
+      <!-- EDITAL -->
+      <material><ambient>0.671 0.063 0.024</ambient><diffuse>0.671 0.063 0.024</diffuse><specular>0.671 0.063 0.024</specular></material>
+      <!-- EDITAL -->
+
+      <!-- LATINHA
+      <material><ambient>0.98046875 0.3828125 0.0078125</ambient><diffuse>0.98046875 0.3828125 0.0078125</diffuse><specular>0.98046875 0.3828125 0.0078125</specular></material>
+      LATINHA -->
+
+      <!-- ILUSTRACAO TEKBOND
+      <material><ambient>0.8984375 0.2578125 0.09375</ambient><diffuse>0.8984375 0.2578125 0.09375</diffuse><specular>0.8984375 0.2578125 0.09375</specular></material>
+      ILUSTRACAO TEKBOND -->
+    </visual>
+  </link>
+  <self_collide>false</self_collide>
+  <static>true</static>
+</model>
+</sdf>
