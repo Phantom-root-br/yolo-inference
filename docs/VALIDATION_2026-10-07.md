@@ -55,13 +55,21 @@ visual_target_alpha        = 1.0
 visual_target_lead_sec     = 0.0
 ```
 
-A new bbox replaces the previous target immediately.
+A new bbox replaces the active steering reference immediately when its
+confidence is better or equal. A weaker bbox is held back while the active
+reference is fresh, then may replace it after the configured priority hold
+(1.25 s in the validated simulation profile).
 
-## End-to-end simulation status
+## End-to-end simulation result
 
-The latest run completed the perception and navigation sequence through:
+The final monitored run completed the full intended sequence:
 
 ```text
+HOME_CAPTURED
+VEHICLE_ARMED
+TAKEOFF_COMPLETE
+SEARCH_SQUARE_SPIRAL
+PERSON_CONFIRMED
 TARGET_LOCKED
 PERSON_CENTERED
 TRACK_HIGH_30S_COMPLETE
@@ -70,28 +78,23 @@ TRACK_LOW_30S_COMPLETE
 ASCEND_TRACK_COMPLETE
 RETURN_HOME_COMPLETE
 LANDED
-```
-
-The mission did **not** complete the final state transition. After `LANDED`,
-the FSM entered `DISARM`, did not observe a confirmed disarmed state within
-the timeout, and transitioned to `ERROR_HOLD`.
-
-A second independent issue was observed in the same run: the annotated-camera
-viewer window did not open. The detector and mission still consumed camera
-frames, so this is treated as a viewer/UI transport problem rather than proof
-that perception was unavailable.
-
-The end-to-end simulation milestone therefore remains open until one run proves:
-
-```text
-...
-RETURN_HOME_COMPLETE
-LANDED
 VEHICLE_DISARMED
 MISSION_COMPLETE
+COMPLETE
 ```
 
-Before real flight, repeat model validation on real imagery, rebuild the
-dataset with real top-down humans, and revalidate thresholds, camera-axis
-signs, PX4 control limits, landing/disarm behavior and failsafes in a
-controlled environment.
+The normal PX4 disarm command still did not confirm in SITL after `LANDED`.
+The simulation-only, post-landing force-disarm fallback then executed and PX4
+reported the vehicle disarmed; the FSM emitted `MISSION_COMPLETE` and entered
+`COMPLETE`.
+
+The independent annotated-camera viewer also opened successfully and received
+its first `640x480` frame from `/yolo/image_annotated`.
+
+This validates the current **simulation integration** on the HARPia workstation.
+It does not qualify the detector, thresholds, control law, force-disarm policy,
+or landing behavior for real flight.
+
+Before real flight, rebuild the dataset with real top-down imagery and
+revalidate model quality, thresholds, camera-axis signs, PX4 control limits,
+landing/disarm behavior and failsafes in a controlled environment.
