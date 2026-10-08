@@ -5,12 +5,14 @@ on:
     paths:
       - "ros2/**"
       - "integration/**"
+      - "vendor/simulation_bringup_eletroquad26/config/simulation/**"
       - "scripts/train_topdown_person.py"
       - ".github/workflows/ros2-static.yml"
   pull_request:
     paths:
       - "ros2/**"
       - "integration/**"
+      - "vendor/simulation_bringup_eletroquad26/config/simulation/**"
       - "scripts/train_topdown_person.py"
       - ".github/workflows/ros2-static.yml"
 
@@ -42,6 +44,7 @@ jobs:
           bash -n integration/harpia/runtime/preflight.sh
           bash -n integration/harpia/runtime/monitor_mission.sh
           bash -n integration/harpia/runtime/run_from_zero.sh
+          bash -n integration/harpia/runtime/check_host.sh
           bash -n integration/harpia/runtime/install_garden_bridge.sh
           bash -n integration/harpia/runtime/locate_final_external_assets.sh
           bash -n integration/harpia/runtime/audit_runtime_dependencies.sh
@@ -49,3 +52,7 @@ jobs:
           bash -n integration/harpia/runtime/package_validated_stack.sh
           bash -n integration/harpia/runtime/audit_distribution.sh
           bash -n integration/harpia/runtime/publish_validated_stack.sh
+          bash -n vendor/simulation_bringup_eletroquad26/config/simulation/wait_and_start_yolo_mission.sh
+          bash -n vendor/simulation_bringup_eletroquad26/config/simulation/start_px4_yolo_person.sh
+          bash -n vendor/simulation_bringup_eletroquad26/config/simulation/start_garden_camera_bridge.sh
+          bash -n vendor/simulation_bringup_eletroquad26/config/simulation/run_yolo_person.sh
