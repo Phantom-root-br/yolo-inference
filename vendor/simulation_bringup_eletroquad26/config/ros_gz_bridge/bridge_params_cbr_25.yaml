@@ -1,0 +1,63 @@
+#############################################################
+#  DOWN CAMERA
+#############################################################
+
+# RGB
+
+- ros_topic_name: "camera/down/color/image_raw"
+  gz_topic_name: "color_cam_downward"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  lazy: true
+  direction: "GZ_TO_ROS"
+
+# Infrared 1
+
+- ros_topic_name: "camera/down/infra1/image_rect_raw"
+  gz_topic_name: "ired1_cam_downward"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  lazy: true
+  direction: "GZ_TO_ROS"
+
+# Infrared 2
+
+- ros_topic_name: "camera/down/infra2/image_rect_raw"
+  gz_topic_name: "ired2_cam_downward"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  lazy: true
+  direction: "GZ_TO_ROS"
+  
+# Depth
+
+- ros_topic_name: "camera/down/depth/image_rect_raw"
+  gz_topic_name: "depth_cam_downward"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  lazy: true
+  direction: "GZ_TO_ROS"
+
+# IMU
+  
+- ros_topic_name: "camera/down/imu"
+  gz_topic_name: "imu_downward"
+  ros_type_name: "sensor_msgs/msg/Imu"
+  gz_type_name: "gz.msgs.IMU"
+  lazy: true
+  direction: "GZ_TO_ROS"  
+
+# Camera Info
+- ros_topic_name: "camera/down/camera_info"
+  gz_topic_name: "camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: "GZ_TO_ROS"
+
+# Lidar Downward
+- ros_topic_name: "lidar/down"
+  gz_topic_name: "lidar"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  lazy: true
+  direction: "GZ_TO_ROS"

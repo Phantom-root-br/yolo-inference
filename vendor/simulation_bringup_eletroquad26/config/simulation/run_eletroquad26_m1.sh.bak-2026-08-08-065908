@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+
+SESSION="HarpiaSim"
+WINDOW_0="main"
+WINDOW_1="sim-essentials"
+WINDOW_2="sim-tools"
+
+# Uma mesma partição Gazebo para todos os painéis.
+export GZ_PARTITION="harpia_m1"
+export GZ_IP="127.0.0.1"
+export IGN_IP="127.0.0.1"
+
+START_MICROXRCE_AGENT="MicroXRCEAgent udp4 -p 8888"
+
+START_PX4="bash /root/harpia_ws/src/simulation_bringup_eletroquad26/config/simulation/start_px4_m1.sh"
+
+START_QGC="bash /root/harpia_ws/src/simulation_bringup_eletroquad26/config/simulation/start_qgc_m1.sh"
+
+START_BRIDGE="ros2 launch simulation_bringup ros_gz_bridge.launch.py"
+
+
+# Se já existe, não tenta attach daqui.
+# A função 'sim' fará o attach depois do ros2 launch.
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "Session $SESSION already exists."
+    exit 0
+fi
+
+
+tmux new-session -d -s "$SESSION" -n "$WINDOW_0"
+
+tmux new-window \
+    -d \
+    -t "$SESSION" \
+    -n "$WINDOW_1"
+
+tmux new-window \
+    -d \
+    -t "$SESSION" \
+    -n "$WINDOW_2"
+
+
+tmux split-window \
+    -h \
+    -t "$SESSION:$WINDOW_1"
+
+tmux split-window \
+    -v \
+    -t "$SESSION:$WINDOW_1.0"
+
+tmux split-window \
+    -v \
+    -t "$SESSION:$WINDOW_1.2"
+
+tmux select-layout \
+    -t "$SESSION:$WINDOW_1" \
+    tiled
+
+
+tmux send-keys \
+    -t "$SESSION:$WINDOW_1.0" \
+    "$START_MICROXRCE_AGENT" C-m
+
+tmux send-keys \
+    -t "$SESSION:$WINDOW_1.1" \
+    "$START_PX4" C-m
+
+tmux send-keys \
+    -t "$SESSION:$WINDOW_1.2" \
+    "$START_QGC" C-m
+
+tmux send-keys \
+    -t "$SESSION:$WINDOW_1.3" \
+    "$START_BRIDGE" C-m
+
+
+tmux select-window \
+    -t "$SESSION:$WINDOW_0"
+
+echo "HarpiaSim criada."

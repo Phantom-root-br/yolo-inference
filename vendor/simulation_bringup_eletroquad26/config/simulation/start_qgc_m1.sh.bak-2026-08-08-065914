@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+echo "==========================================="
+echo " ELETROQUAD M1 - QGROUNDCONTROL"
+echo "==========================================="
+
+echo
+echo "Aguardando PX4/MAVLink..."
+
+for i in $(seq 1 120); do
+    if pgrep -f \
+       '/root/PX4-Autopilot/build/px4_sitl_default/bin/px4' \
+       >/dev/null 2>&1; then
+
+        if command -v ss >/dev/null 2>&1 &&
+           ss -lun 2>/dev/null |
+           grep -qE ':18570[[:space:]]'; then
+
+            echo "PX4/MAVLink detectado."
+            break
+        fi
+    fi
+
+    printf "."
+    sleep 1
+done
+
+echo
+
+mkdir -p /tmp/runtime-harpia
+chown harpia:harpia /tmp/runtime-harpia
+chmod 700 /tmp/runtime-harpia
+
+echo "Abrindo QGroundControl..."
+
+exec runuser -u harpia -- env \
+    DISPLAY="${DISPLAY}" \
+    XDG_RUNTIME_DIR=/tmp/runtime-harpia \
+    QT_X11_NO_MITSHM=1 \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    /usr/local/bin/QGroundControl.AppImage

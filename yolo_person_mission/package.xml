@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>yolo_person_mission</name>
+  <version>0.1.0</version>
+
+  <description>
+    Autonomous PX4 mission driven by HARPia YOLO person detections.
+  </description>
+
+  <maintainer email="harpia@example.com">HARPia Team</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>px4_msgs</depend>
+  <depend>yolo_person_interfaces</depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

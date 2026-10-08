@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+
+WORLD="eletroquad26_m1"
+
+export GZ_VERSION=garden
+export GZ_IP=127.0.0.1
+export IGN_IP=127.0.0.1
+
+unset GZ_PARTITION
+unset IGN_PARTITION
+unset LIBGL_ALWAYS_SOFTWARE
+
+mkdir -p /tmp/runtime-root
+chmod 700 /tmp/runtime-root
+
+export XDG_RUNTIME_DIR=/tmp/runtime-root
+export QT_X11_NO_MITSHM=1
+PX4_DIR="/root/PX4-Autopilot"
+WORLD_FILE="$PX4_DIR/Tools/simulation/gz/worlds/${WORLD}.sdf"
+
+SERVER_LOG="/tmp/eletroquad_m1_gz_server.log"
+GUI_LOG="/tmp/eletroquad_m1_gz_gui.log"
+
+# Caminhos que já foram validados manualmente.
+export GZ_SIM_RESOURCE_PATH="/root/PX4-Autopilot/Tools/simulation/gz/models:/root/PX4-Autopilot/Tools/simulation/gz/worlds:/opt/ros/humble/share/as2_gazebo_assets/worlds:/opt/ros/humble/share/as2_gazebo_assets/models"
+
+# Não usar a partição experimental dos testes anteriores.
+unset GZ_PARTITION
+
+cd "$PX4_DIR" || exit 1
+
+echo "=============================================="
+echo " ELETROQUAD M1 - GAZEBO + PX4"
+echo "=============================================="
+echo
+echo "DISPLAY=${DISPLAY:-<vazio>}"
+echo "GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH"
+echo
+
+rm -f "$SERVER_LOG" "$GUI_LOG"
+
+echo "[1/3] Iniciando Gazebo Server..."
+
+gz sim -r -s "$WORLD_FILE" >"$SERVER_LOG" 2>&1 &
+GZ_SERVER_PID=$!
+
+echo "Gazebo Server PID: $GZ_SERVER_PID"
+echo
+
+echo "[2/3] Aguardando inicialização do Gazebo..."
+echo "Aguarde aproximadamente 12 segundos."
+
+#
+# NÃO usamos mais `gz service -l`.
+# Já comprovamos que /world/eletroquad26_m1/create existe,
+# mas essa consulta travava o bringup.
+#
+sleep 12
+
+if ! kill -0 "$GZ_SERVER_PID" 2>/dev/null; then
+    echo
+    echo "ERRO: Gazebo Server encerrou."
+    echo
+    echo "===== LOG GAZEBO ====="
+    tail -100 "$SERVER_LOG"
+    echo
+    exec bash
+fi
+
+echo
+echo "Gazebo Server está ativo."
+echo
+
+if [ -n "${DISPLAY:-}" ]; then
+    echo "Abrindo Gazebo GUI..."
+
+    gz sim -g >"$GUI_LOG" 2>&1 &
+
+    sleep 2
+else
+    echo "DISPLAY não definido."
+    echo "Continuando sem GUI."
+fi
+
+echo
+echo "[3/3] Iniciando PX4 + x500_0..."
+echo
+
+echo "Validando x500_0 pré-carregado..."
+
+MODEL_READY=0
+
+for i in $(seq 1 20); do
+    if timeout 3 gz model -m x500_0 -p 2>/dev/null         | grep -q 'Name: x500_0'; then
+        MODEL_READY=1
+        break
+    fi
+
+    sleep 1
+done
+
+if [ "$MODEL_READY" -ne 1 ]; then
+    echo "ERRO: x500_0 não apareceu no world."
+    exit 1
+fi
+
+
+echo "x500_0 disponível."
+
+# HARPia: assentamento físico do X500
+#
+# O X500 deve cair naturalmente até a plataforma antes que
+# o PX4 / EKF sejam iniciados. A posição normal observada é
+# aproximadamente z=0.2385.
+echo "Aguardando assentamento físico do x500_0..."
+
+LAST_Z=""
+STABLE=0
+SETTLED=0
+
+for i in $(seq 1 30); do
+
+    Z=$(
+        timeout 4 gz model -m x500_0 -p 2>/dev/null \
+        | awk '
+            /Pose \[ XYZ/ {
+                getline
+                gsub(/\[/, "")
+                gsub(/\]/, "")
+                print $3
+                exit
+            }
+        '
+    )
+
+    if [ -n "$Z" ]; then
+
+        printf "  assentamento [%02d/30]: z=%s" "$i" "$Z"
+
+        if [ -n "$LAST_Z" ]; then
+
+            if awk \
+                -v a="$Z" \
+                -v b="$LAST_Z" \
+                'BEGIN {
+                    d=a-b
+                    if (d < 0) d=-d
+                    exit !(a > 0.20 && d < 0.003)
+                }'
+            then
+                STABLE=$((STABLE + 1))
+                printf " estável=%d/3\n" "$STABLE"
+            else
+                STABLE=0
+                printf " estável=0/3\n"
+            fi
+
+        else
+            echo
+        fi
+
+        LAST_Z="$Z"
+
+        if [ "$STABLE" -ge 3 ]; then
+            SETTLED=1
+            echo "✓ x500_0 assentado fisicamente em z=$Z"
+            break
+        fi
+    fi
+
+    sleep 1
+done
+
+if [ "$SETTLED" -ne 1 ]; then
+    echo "ERRO: x500_0 não estabilizou antes do PX4."
+    exit 1
+fi
+
+
+echo "Restaurando bridge /clock..."
+
+pkill -f 'parameter_bridge.*/world/eletroquad26_m1/clock@rosgraph_msgs/msg/Clock' \
+    2>/dev/null || true
+
+setsid -f bash -lc '
+set +u
+source /opt/ros/humble/setup.bash
+export GZ_VERSION=garden
+source /root/ros_gz_garden_ws/install/setup.bash
+source /root/harpia_ws/install/setup.bash
+
+exec ros2 run ros_gz_bridge parameter_bridge \
+  "/world/eletroquad26_m1/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock" \
+  --ros-args \
+  -r "/world/eletroquad26_m1/clock:=/clock"
+' </dev/null >/tmp/harpia_clock_bridge.log 2>&1
+
+sleep 1
+
+PX4_GZ_STANDALONE=1 \
+PX4_GZ_WORLD="$WORLD" \
+PX4_GZ_MODEL_NAME=x500_0 \
+make px4_sitl gz_x500
+
+RC=$?
+
+echo
+echo "PX4 encerrou com código: $RC"
+echo
+echo "Gazebo Server log:"
+echo "  $SERVER_LOG"
+echo
+echo "Gazebo GUI log:"
+echo "  $GUI_LOG"
+echo
+
+exec bash

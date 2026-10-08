@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+
+SESSION="HarpiaSim"
+WS="/root/harpia_ws"
+SIM_DIR="$WS/src/simulation_bringup_eletroquad26/config/simulation"
+
+export GZ_SIM_RESOURCE_PATH="/root/PX4-Autopilot/Tools/simulation/gz/models:/root/PX4-Autopilot/Tools/simulation/gz/worlds${GZ_SIM_RESOURCE_PATH:+:$GZ_SIM_RESOURCE_PATH}"
+
+# Remove a partição experimental usada durante os testes.
+unset GZ_PARTITION
+
+# Evita duas sessões HarpiaSim simultâneas.
+tmux has-session -t "$SESSION" 2>/dev/null &&
+    tmux kill-session -t "$SESSION"
+
+# Janela inicial.
+tmux new-session -d -s "$SESSION" -n main
+
+# Janela com infraestrutura da simulação.
+tmux new-window -t "$SESSION" -n sim-essentials
+
+# Precisamos de quatro painéis.
+tmux split-window -t "$SESSION:sim-essentials"
+tmux split-window -t "$SESSION:sim-essentials"
+tmux split-window -t "$SESSION:sim-essentials"
+
+tmux select-layout -t "$SESSION:sim-essentials" tiled
+
+# Obtém IDs reais dos painéis para não depender de índices do tmux.
+mapfile -t PANES < <(
+    tmux list-panes \
+        -t "$SESSION:sim-essentials" \
+        -F '#{pane_id}'
+)
+
+AGENT_PANE="${PANES[0]}"
+PX4_PANE="${PANES[1]}"
+QGC_PANE="${PANES[2]}"
+BRIDGE_PANE="${PANES[3]}"
+
+# Pane 1: MicroXRCEAgent
+tmux send-keys -t "$AGENT_PANE" \
+    "clear; echo '=== MicroXRCEAgent ==='; MicroXRCEAgent udp4 -p 8888" C-m
+
+# Pane 2: Gazebo + PX4
+tmux send-keys -t "$PX4_PANE" \
+    "clear; echo '=== Gazebo + PX4 / Harpia ==='; bash '$SIM_DIR/start_px4_m1.sh'" C-m
+
+# Pane 3: reservado - QGroundControl desativado
+tmux send-keys -t "$QGC_PANE" \
+    "clear; echo '=== QGroundControl DESATIVADO ==='; echo 'QGC fora deste bringup.'" C-m
+
+# Pane 4: ROS-Gazebo bridge
+tmux send-keys -t "$BRIDGE_PANE" \
+    "clear; echo '=== ROS-Gazebo Bridge / Garden ==='; cd '$WS'; source /opt/ros/\${ROS_DISTRO:-humble}/setup.bash; export GZ_VERSION=garden; source /root/ros_gz_garden_ws/install/setup.bash; source install/setup.bash; ros2 launch simulation_bringup ros_gz_bridge.launch.py" C-m
+
+# Janela exclusivamente para comandos do usuário / missões.
+tmux new-window -t "$SESSION" -n sim-tools
+
+tmux send-keys -t "$SESSION:sim-tools" \
+    "cd '$WS'; source /opt/ros/\${ROS_DISTRO:-humble}/setup.bash; source install/setup.bash; clear; echo '=== SIM TOOLS ==='; echo; echo 'Missão:'; echo '  ros2 run square_mission square_mission'; echo" C-m
+
+# Deixa a janela de infraestrutura selecionada.
+tmux select-window -t "$SESSION:sim-essentials"
+
+echo "Sessão $SESSION criada."
+echo "Janelas:"
+echo "  main"
+echo "  sim-essentials"
+echo "  sim-tools"

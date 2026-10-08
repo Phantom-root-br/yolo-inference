@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+
+set -u
+
+WORLD="eletroquad26_m1"
+PX4_DIR="/root/PX4-Autopilot"
+WORLD_FILE="$PX4_DIR/Tools/simulation/gz/worlds/${WORLD}.sdf"
+
+SERVER_LOG="/tmp/eletroquad_m1_gz_server.log"
+GUI_LOG="/tmp/eletroquad_m1_gz_gui.log"
+
+echo "=============================================="
+echo " ELETROQUAD M1 - GAZEBO + PX4"
+echo "=============================================="
+echo
+echo "DISPLAY=${DISPLAY:-<não definido>}"
+echo "GZ_PARTITION=${GZ_PARTITION:-<não definida>}"
+echo
+
+cd "$PX4_DIR" || exit 1
+
+#
+# Não alterar GZ_PARTITION aqui.
+# Ela é definida pelo run_eletroquad26_m1.sh e precisa
+# ser idêntica nos quatro painéis do tmux.
+#
+unset PX4_GZ_MODEL_NAME
+unset PX4_GZ_MODEL
+unset PX4_GZ_WORLD
+unset PX4_GZ_STANDALONE
+
+rm -f "$SERVER_LOG" "$GUI_LOG"
+
+
+echo "[1/4] Iniciando Gazebo Server..."
+echo "World: $WORLD_FILE"
+echo
+
+gz sim -r -s "$WORLD_FILE" \
+    >"$SERVER_LOG" 2>&1 &
+
+GZ_SERVER_PID=$!
+
+echo "Gazebo Server PID: $GZ_SERVER_PID"
+echo
+
+
+echo "[2/4] Aguardando Gazebo ficar realmente disponível..."
+
+READY=0
+
+for attempt in $(seq 1 60); do
+
+    # Confirma primeiro que o processo ainda existe.
+    if ! kill -0 "$GZ_SERVER_PID" 2>/dev/null; then
+        echo
+        echo "ERRO: Gazebo Server encerrou durante a inicialização."
+        echo
+        echo "===== LOG DO GAZEBO SERVER ====="
+        tail -100 "$SERVER_LOG"
+        echo
+        exec bash
+    fi
+
+    #
+    # O problema anterior estava aqui:
+    # 2 segundos não eram suficientes para gz service -l.
+    #
+    SERVICES="$(
+        timeout 8 gz service -l 2>/dev/null || true
+    )"
+
+    if echo "$SERVICES" |
+       grep -q "^/world/${WORLD}/create$"; then
+
+        READY=1
+        echo
+        echo "Gazebo pronto."
+        echo "Serviço encontrado:"
+        echo "  /world/${WORLD}/create"
+        break
+    fi
+
+    printf "."
+
+    sleep 1
+done
+
+echo
+
+if [ "$READY" -ne 1 ]; then
+    echo
+    echo "ERRO: serviço do mundo não apareceu."
+    echo
+    echo "Processos Gazebo:"
+    pgrep -af 'gz sim' || true
+
+    echo
+    echo "===== ÚLTIMOS SERVIÇOS ENCONTRADOS ====="
+    timeout 15 gz service -l 2>/dev/null |
+        grep '/world/' |
+        head -40 || true
+
+    echo
+    echo "===== LOG DO GAZEBO SERVER ====="
+    tail -100 "$SERVER_LOG"
+
+    echo
+    echo "Painel preservado para diagnóstico."
+    exec bash
+fi
+
+
+echo
+echo "[3/4] Abrindo Gazebo GUI..."
+
+gz sim -g \
+    >"$GUI_LOG" 2>&1 &
+
+GZ_GUI_PID=$!
+
+echo "Gazebo GUI PID: $GZ_GUI_PID"
+
+#
+# Dá alguns segundos apenas para a janela aparecer.
+# O servidor já foi validado anteriormente.
+#
+sleep 4
+
+if ! kill -0 "$GZ_GUI_PID" 2>/dev/null; then
+    echo
+    echo "ERRO: Gazebo GUI encerrou."
+    echo
+    echo "===== LOG DA GUI ====="
+    cat "$GUI_LOG" 2>/dev/null || true
+    echo
+    exec bash
+fi
+
+
+echo
+echo "[4/4] Iniciando PX4 e inserindo harpia_0..."
+echo
+
+PX4_GZ_STANDALONE=1 \
+PX4_GZ_WORLD="$WORLD" \
+make px4_sitl gz_harpia
+
+PX4_RC=$?
+
+echo
+echo "=============================================="
+echo " PX4 encerrou"
+echo " Código: $PX4_RC"
+echo "=============================================="
+echo
+echo "Gazebo Server PID: $GZ_SERVER_PID"
+echo "Gazebo GUI PID:    $GZ_GUI_PID"
+echo
+echo "Painel preservado para diagnóstico."
+
+exec bash
