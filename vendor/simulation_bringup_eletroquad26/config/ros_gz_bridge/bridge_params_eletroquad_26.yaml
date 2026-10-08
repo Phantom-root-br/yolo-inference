@@ -1,0 +1,32 @@
+#############################################################
+#  DOWN CAMERA
+#############################################################
+
+# RGB
+
+- ros_topic_name: "camera/image_raw"
+  gz_topic_name: "/color_cam_downward"
+  ros_type_name: "sensor_msgs/msg/Image"
+  gz_type_name: "gz.msgs.Image"
+  lazy: false
+  direction: "GZ_TO_ROS"
+
+# Camera Info
+- ros_topic_name: "camera_info"
+  gz_topic_name: "/camera_info"
+  ros_type_name: "sensor_msgs/msg/CameraInfo"
+  gz_type_name: "gz.msgs.CameraInfo"
+  direction: "GZ_TO_ROS"
+
+
+#############################################################
+#  LIDAR
+#############################################################
+
+# Lidar Downward
+- ros_topic_name: "lidar/down"
+  gz_topic_name: "lidar"
+  ros_type_name: "sensor_msgs/msg/LaserScan"
+  gz_type_name: "gz.msgs.LaserScan"
+  lazy: true
+  direction: "GZ_TO_ROS"
