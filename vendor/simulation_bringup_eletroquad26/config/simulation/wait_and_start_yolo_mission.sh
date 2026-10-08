@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set +H 2>/dev/null || true
+WS="${HARPIA_WS:-/root/harpia_ws}"
 source /opt/ros/humble/setup.bash
-source /root/harpia_ws/install/setup.bash
+source "$WS/install/setup.bash"
 
 echo "============================================================"
 echo " HARPia YOLO - PREPARANDO MISSAO"
@@ -53,4 +54,4 @@ echo " Missao iniciara em 8 segundos."
 echo "============================================================"
 sleep 8
 
-exec /root/harpia_ws/install/yolo_person_mission/lib/yolo_person_mission/person_mission --ros-args -p flight_altitude_m:=4.0 -p confirmation_confidence:=0.10 -p confirmation_frames:=1 -p detection_max_age_sec:=4.0 -p tracking_min_confidence:=0.05 -p track_duration_sec:=30.0 -p low_altitude_m:=1.0 -p low_track_duration_sec:=30.0 -p bbox_ema_alpha:=1.0 -p vertical_tolerance_m:=0.25 -p spiral_step_m:=2.0 -p spiral_max_radius_m:=4.0 -p visual_servo_gain:=1.80 -p visual_target_alpha:=1.0 -p visual_target_max_update_m:=3.50 -p visual_target_lead_sec:=0.0 -p visual_target_max_speed_mps:=0.80 -p alignment_hold_sec:=0.50 -p local_x_from_image_y_sign:=-1.0 -p local_y_from_image_x_sign:=1.0 -p bbox_priority_hold_sec:=1.25 -p bbox_confidence_epsilon:=0.0 -p allow_force_disarm_after_landed:=true -p force_disarm_after_sec:=5.0 -p disarm_timeout_sec:=20.0
+exec "$WS/install/yolo_person_mission/lib/yolo_person_mission/person_mission" --ros-args -p flight_altitude_m:=4.0 -p confirmation_confidence:=0.10 -p confirmation_frames:=1 -p detection_max_age_sec:=4.0 -p tracking_min_confidence:=0.05 -p track_duration_sec:=30.0 -p low_altitude_m:=1.0 -p low_track_duration_sec:=30.0 -p bbox_ema_alpha:=1.0 -p vertical_tolerance_m:=0.25 -p spiral_step_m:=2.0 -p spiral_max_radius_m:=4.0 -p visual_servo_gain:=1.80 -p visual_target_alpha:=1.0 -p visual_target_max_update_m:=3.50 -p visual_target_lead_sec:=0.0 -p visual_target_max_speed_mps:=0.80 -p alignment_hold_sec:=0.50 -p local_x_from_image_y_sign:=-1.0 -p local_y_from_image_x_sign:=1.0 -p bbox_priority_hold_sec:=1.25 -p bbox_confidence_epsilon:=0.0 -p allow_force_disarm_after_landed:=true -p force_disarm_after_sec:=5.0 -p disarm_timeout_sec:=20.0
