@@ -1,11 +1,28 @@
-# Reproducing the HARPia YOLO mission
+# Reproducing the validated HARPia YOLO mission
 
-This document defines the supported path for reproducing the simulation that
-reached `MISSION_COMPLETE` on 2026-10-07.
+This is the supported procedure for reproducing the simulation that reached
+`MISSION_COMPLETE` on 2026-10-07.
 
-## Team member workflow
+## 1. Supported host baseline
 
-The intended user experience is:
+The repository distributes the mission-specific stack, but the computer still
+needs the robotics base environment:
+
+- Ubuntu environment compatible with ROS 2 Humble;
+- ROS 2 Humble installed at `/opt/ros/humble`;
+- Gazebo Garden / gz-sim7;
+- PX4 build dependencies (`make`, compiler toolchain, CMake, etc.);
+- `MicroXRCEAgent`;
+- `git`, `tmux`, `python3-venv`, `rsync`, `dpkg-deb`;
+- a valid graphical `DISPLAY` when Gazebo GUI and the annotated viewer are
+  desired.
+
+The entrypoint performs a host check before downloading/building anything
+expensive.
+
+## 2. Clone and run
+
+Use the validated workspace layout:
 
 ```bash
 mkdir -p /root/harpia_ws/src
@@ -17,103 +34,107 @@ cd yolo-inference
 bash integration/harpia/runtime/run_from_zero.sh
 ```
 
-`run_from_zero.sh` performs:
+The same command can be rerun. It is designed to converge the mission stack to
+the frozen revisions.
+
+## 3. What the command does
+
+`run_from_zero.sh` executes:
 
 ```text
-bootstrap distributed stack
--> preflight
--> build ROS packages
--> reset previous HARPiaYolo tmux session
--> start XRCE/PX4/Gazebo
--> start ROS-Gazebo bridge
--> start YOLO
--> start mission
--> open annotated camera viewer
--> continuously print mission state
--> finish on MISSION_COMPLETE / ERROR_HOLD / timeout
+HOST CHECK
+-> clone/checkout PX4 at the validated commit
+-> clone/checkout px4_msgs at the validated commit
+-> expose the vendored simulation package in the ROS workspace
+-> reconstruct the validated Garden bridge cache
+-> verify the custom YOLO model checksum
+-> create/update the Python environment
+-> build px4_msgs + simulation + detector + mission packages
+-> preflight exact revisions/checksums
+-> reset a previous HarpiaYolo tmux session
+-> start XRCE / Gazebo / PX4
+-> start the Garden camera bridge
+-> start the YOLO detector
+-> start the mission FSM
+-> open the annotated camera viewer
+-> continuously print mission status
+-> finish on MISSION_COMPLETE / ERROR_HOLD / monitor timeout
 ```
 
-The default graphical behavior matches the validated run:
+## 4. Windows and terminal behavior
 
-- Gazebo simulation window;
-- separate annotated drone-camera window;
-- tmux session `HarpiaYolo`;
-- continuous mission-state output in the terminal.
+The graphical run should reproduce the validated operator experience:
 
-Close the camera viewer with its window-manager **X**, **Esc**, or **q**. To
-run without the camera viewer:
+1. Gazebo GUI;
+2. a separate annotated drone-camera window;
+3. tmux session `HarpiaYolo`;
+4. mission status continuously printed in the invoking terminal.
+
+The camera viewer is independent from the mission. Close it with the
+window-manager **X**, **Esc**, or **q**.
+
+Run without the separate camera window:
 
 ```bash
 HARPIA_VIEWER=0 bash integration/harpia/runtime/run_from_zero.sh
 ```
 
-## Base-machine requirements
+## 5. Frozen runtime artifacts
 
-The repository can distribute the mission, detector, model and simulation
-package, but the host still needs the robotics runtime:
-
-- Ubuntu environment compatible with ROS 2 Humble;
-- ROS 2 Humble at `/opt/ros/humble`;
-- Gazebo Garden / `gz sim`;
-- PX4 build/runtime dependencies;
-- `git`, `tmux`, `python3-venv`, `rsync`.
-
-The validated PX4 revision and model checksum are stored in
-`integration/harpia/repro/validated_stack.env` after the stack freeze is
-published.
-
-## What must be inside the repository
-
-A distribution is considered complete only when all these paths are tracked:
+The repository contains the mission-specific artifacts that used to exist only
+on the validated workstation:
 
 ```text
 yolo_person_mission/
-vendor/simulation_bringup_eletroquad26/
 models/harpia_person_topdown_pilot_v2.pt
+vendor/simulation_bringup_eletroquad26/
+vendor/ros_gzgarden/
 integration/harpia/repro/validated_stack.env
 ```
 
-Run:
+The simulation vendor tree includes:
+
+- `harpia_yolo_person.sdf`;
+- moving human actor;
+- HARPia X500 model;
+- `eletroquad_26` assets;
+- LW20;
+- RealSense D435.
+
+The Garden bridge vendor tree contains the exact bridge/interface Debian
+packages used to reconstruct the validated camera-bridge cache.
+
+The manifest freezes:
+
+- PX4 commit;
+- px4_msgs commit;
+- simulation source commit;
+- YOLO model size and SHA256;
+- SHA256 trees for Eletroquad, LW20 and RealSense;
+- Garden bridge/interface package checksums;
+- `parameter_bridge` checksum;
+- ROS/Gazebo versions observed in the validated workstation.
+
+## 6. Distribution audit
+
+To verify that a checkout contains the complete distribution:
 
 ```bash
 bash integration/harpia/runtime/audit_distribution.sh
 ```
 
-The required final result is:
+Required result:
 
 ```text
 DISTRIBUTION_READY=1
 ```
 
-## Maintainer: freeze the exact validated workstation
+The audit fails on missing model/assets, wrong checksums, missing Garden
+packages, workstation backup files, or oversized Git files.
 
-On the workstation that produced the successful simulation:
+## 7. Expected mission sequence
 
-```bash
-cd /root/harpia_ws/src/yolo-inference
-git pull
-
-bash integration/harpia/runtime/publish_validated_stack.sh
-```
-
-This publishes a dedicated branch named `reproducible-harpia-demo` containing
-only the exact missing runtime artifacts:
-
-- local `yolo_person_mission` package;
-- current `simulation_bringup_eletroquad26` package and assets;
-- validated custom model;
-- generated revision/checksum manifest.
-
-The script does **not** add local datasets, training runs or unrelated untracked
-files.
-
-After CI and distribution audit pass, merge that branch into `main`. From
-that point, the team-member workflow at the top of this document is the
-supported entry point.
-
-## Expected mission sequence
-
-A successful run should visibly reach:
+The successful mission should visibly reach:
 
 ```text
 HOME_CAPTURED
@@ -134,15 +155,28 @@ MISSION_COMPLETE
 COMPLETE
 ```
 
-In the validated SITL run, normal DISARM did not confirm after `LANDED`; the
-simulation-only post-landing fallback completed the disarm. That fallback is
-disabled by default outside the simulation launch profile.
+In the validated SITL run, normal DISARM did not confirm after `LANDED`. The
+simulation profile enabled a post-landing force-disarm fallback, after which
+PX4 reported disarmed and the FSM reached `MISSION_COMPLETE`. The fallback is
+not a real-aircraft validation and is disabled by default in the mission node.
 
-## Model evolution
+## 8. First reproduction by another team member
 
-Do not replace the validated model in-place while changing mission logic.
+The final acceptance test for repository handoff is intentionally simple:
 
-Model improvements follow:
+1. use a different supported host/container;
+2. clone `main` into `/root/harpia_ws/src/yolo-inference`;
+3. run only `run_from_zero.sh`;
+4. do not copy files manually from the original workstation;
+5. verify Gazebo + annotated camera window;
+6. verify the terminal reaches `MISSION_COMPLETE`.
+
+If that test fails, keep the failure log and fix the bootstrap/README rather
+than adding undocumented manual steps.
+
+## 9. Model evolution
+
+The frozen model is the simulation baseline. A new model follows:
 
 ```text
 new dataset
