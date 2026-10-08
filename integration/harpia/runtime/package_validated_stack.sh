@@ -57,7 +57,7 @@ echo "===== 2. VENDOR EXACT SIMULATION PACKAGE ====="
 
 rm -rf "$VENDOR_DIR"
 
-rsync -a   --exclude='.git/'   --exclude='build/'   --exclude='install/'   --exclude='log/'   --exclude='__pycache__/'   --exclude='.pytest_cache/'   --exclude='.cache/'   "$SIM_SRC/"   "$VENDOR_DIR/"
+rsync -a   --exclude='.git/'   --exclude='build/'   --exclude='install/'   --exclude='log/'   --exclude='__pycache__/'   --exclude='.pytest_cache/'   --exclude='.cache/'   --exclude='*.bak'   --exclude='*.bak-*'   --exclude='*.bak.*'   "$SIM_SRC/"   "$VENDOR_DIR/"
 
 echo "[OK] vendored: $VENDOR_DIR"
 
