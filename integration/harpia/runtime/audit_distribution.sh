@@ -43,6 +43,13 @@ check_file "$SIM/worlds/harpia_yolo_person.sdf"
 check_file "$SIM/config/simulation/run_yolo_person.sh"
 check_file "$SIM/config/simulation/wait_and_start_yolo_mission.sh"
 
+# The validated world and x500 model reference these external Gazebo assets.
+# A clone is not self-contained until they are bundled or replaced by an
+# automated, pinned installer.
+check_dir "$SIM/models/eletroquad_26"
+check_dir "$SIM/models/harpia/LW20"
+check_dir "$SIM/models/harpia/realsense_d435"
+
 check_file "$MODEL"
 check_file "$MANIFEST"
 
@@ -70,6 +77,21 @@ do
     fail=1
   fi
 done
+
+echo
+echo "===== BACKUP / WORKSTATION JUNK ====="
+
+backup_files="$(
+  find "$SIM" -type f \( -name '*.bak' -o -name '*.bak-*' -o -name '*.bak.*' \) -print 2>/dev/null || true
+)"
+
+if [[ -n "$backup_files" ]]; then
+  printf '%s\n' "$backup_files"
+  echo "[FAIL] local backup files are present in distribution"
+  fail=1
+else
+  echo "[OK] no local backup files"
+fi
 
 echo
 echo "===== LARGE FILES ====="
