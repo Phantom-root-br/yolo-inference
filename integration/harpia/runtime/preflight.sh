@@ -3,6 +3,9 @@ set -euo pipefail
 
 WS="${HARPIA_WS:-/root/harpia_ws}"
 REPO="${YOLO_REPO:-$WS/src/yolo-inference}"
+PX4_DIR="${PX4_DIR:-/root/PX4-Autopilot}"
+PX4_MSGS_DIR="${PX4_MSGS_DIR:-$WS/src/px4_msgs}"
+MANIFEST="$REPO/integration/harpia/repro/validated_stack.env"
 
 fail=0
 
@@ -10,40 +13,64 @@ ok()   { printf '[OK] %s\n' "$*"; }
 warn() { printf '[WARN] %s\n' "$*"; }
 err()  { printf '[ERROR] %s\n' "$*" >&2; fail=1; }
 
-command -v tmux >/dev/null 2>&1 && ok "tmux" || err "tmux not found"
-command -v bash >/dev/null 2>&1 && ok "bash" || err "bash not found"
+echo "============================================================"
+echo " HARPia :: PREFLIGHT"
+echo "============================================================"
+
+for cmd in git tmux bash python3 ros2 gz MicroXRCEAgent; do
+  command -v "$cmd" >/dev/null 2>&1     && ok "$cmd"     || err "$cmd not found"
+done
 
 [[ -f /opt/ros/humble/setup.bash ]]   && ok "ROS 2 Humble"   || err "/opt/ros/humble/setup.bash not found"
 
-[[ -d "$WS" ]]   && ok "workspace: $WS"   || err "workspace not found: $WS"
+[[ -f "$MANIFEST" ]]   && ok "validated manifest"   || err "missing validated manifest"
 
-[[ -d "$REPO" ]]   && ok "repository: $REPO"   || err "repository not found: $REPO"
+if [[ -f "$MANIFEST" ]]; then
+  # shellcheck disable=SC1090
+  source "$MANIFEST"
+fi
 
 SIM="$WS/src/simulation_bringup_eletroquad26"
 MISSION="$REPO/yolo_person_mission"
 MODEL="$REPO/models/harpia_person_topdown_pilot_v2.pt"
+BRIDGE="/root/.cache/harpia/ros_gzgarden/opt/ros/humble/lib/ros_gz_bridge/parameter_bridge"
 
-[[ -d "$SIM" ]]   && ok "simulation_bringup_eletroquad26"   || err "missing external HARPia simulation dependency: $SIM"
+[[ -d "$SIM" ]] && ok "simulation package" || err "simulation package missing"
+[[ -d "$MISSION" ]] && ok "mission package" || err "mission package missing"
+[[ -f "$MODEL" ]] && ok "validated YOLO model" || err "validated YOLO model missing"
 
-[[ -d "$MISSION" ]]   && ok "local yolo_person_mission package"   || err "missing yolo_person_mission package: $MISSION"
+[[ -d "$SIM/models/eletroquad_26" ]]   && ok "eletroquad_26 assets"   || err "eletroquad_26 assets missing"
 
-[[ -f "$MODEL" ]]   && ok "model: harpia_person_topdown_pilot_v2.pt"   || err "model artifact missing: $MODEL"
+[[ -d "$SIM/models/harpia/LW20" ]]   && ok "LW20 assets"   || err "LW20 assets missing"
 
-[[ -x /root/yolo_venv/bin/python3 ]]   && ok "YOLO Python venv"   || warn "/root/yolo_venv/bin/python3 not found; scripts may fall back to python3"
+[[ -d "$SIM/models/harpia/realsense_d435" ]]   && ok "RealSense assets"   || err "RealSense assets missing"
 
-[[ -x /root/yolo_venv/bin/colcon ]]   && ok "colcon"   || warn "/root/yolo_venv/bin/colcon not found"
+if [[ -d "$PX4_DIR/.git" ]]; then
+  actual="$(git -C "$PX4_DIR" rev-parse HEAD)"
+  [[ "$actual" == "${PX4_COMMIT:-}" ]]     && ok "PX4 exact commit $actual"     || err "PX4 commit mismatch: $actual"
+else
+  err "PX4 repository missing: $PX4_DIR"
+fi
+
+if [[ -d "$PX4_MSGS_DIR/.git" ]]; then
+  actual="$(git -C "$PX4_MSGS_DIR" rev-parse HEAD)"
+  [[ "$actual" == "${PX4_MSGS_COMMIT:-}" ]]     && ok "px4_msgs exact commit $actual"     || err "px4_msgs commit mismatch: $actual"
+else
+  err "px4_msgs repository missing: $PX4_MSGS_DIR"
+fi
+
+if [[ -x "$BRIDGE" ]]; then
+  actual="$(sha256sum "$BRIDGE" | awk '{print $1}')"
+  [[ "$actual" == "${GARDEN_PARAMETER_BRIDGE_SHA256:-}" ]]     && ok "validated Garden parameter_bridge"     || err "Garden parameter_bridge checksum mismatch"
+else
+  err "validated Garden parameter_bridge missing"
+fi
 
 if [[ "$fail" -ne 0 ]]; then
-  cat <<'EOF'
-
-Preflight failed.
-
-This means the complete HARPia demo is not yet a standalone clone-and-run
-artifact on this machine. The portable YOLO package remains usable by itself,
-but the full simulation also requires the HARPia/PX4 simulation workspace and
-the custom model artifact.
-EOF
+  echo
+  echo "PREFLIGHT_READY=0"
   exit 2
 fi
 
-ok "preflight complete"
+echo
+echo "PREFLIGHT_READY=1"
