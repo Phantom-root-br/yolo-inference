@@ -12,14 +12,15 @@ Percepção de pessoas com YOLO para o projeto **HARPia**, incluindo:
 
 [![CI](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml/badge.svg)](https://github.com/Phantom-root-br/yolo-inference/actions/workflows/ci.yml)
 
-> **Integração quase fechada em simulação - 07/10/2026**  
-> O pipeline ROS 2 de percepção, TARGET_LOCKED, centralização/tracking visual,
-> subida, RETURN_HOME e LAND foi executado com sucesso. O último run chegou a
-> `LANDED`, mas o comando de **DISARM não confirmou** e a FSM entrou em
-> `ERROR_HOLD`. A janela separada da câmera anotada também não abriu nesse run.
-> Esses dois pontos permanecem como pendências explícitas antes de marcar a
-> missão end-to-end como concluída. O modelo atual continua sendo de
-> **simulação top-down** e não deve ser tratado como modelo validado para voo real.
+> **Integração end-to-end validada em simulação - 07/10/2026**  
+> O pipeline ROS 2 foi executado continuamente de TAKEOFF até
+> `MISSION_COMPLETE`: busca, TARGET_LOCKED, centralização/tracking, descida,
+> tracking a baixa altitude, subida, RETURN_HOME, LAND e DISARM. No SITL, o
+> desarme normal não confirmou após `LANDED`, então o fallback de force-disarm
+> **restrito à simulação e pós-pouso** foi acionado e a FSM chegou a
+> `VEHICLE_DISARMED` e `COMPLETE`. O viewer anotado também abriu e recebeu
+> frames 640x480. O modelo continua sendo de **simulação top-down** e não deve
+> ser tratado como validado para voo real.
 
 ### Atalhos
 
@@ -29,7 +30,8 @@ Percepção de pessoas com YOLO para o projeto **HARPia**, incluindo:
 - **Evoluir o modelo sem quebrar a integração:** [docs/MODEL_UPGRADE_POLICY.md](docs/MODEL_UPGRADE_POLICY.md)
 - **Snapshot de validação:** [docs/VALIDATION_2026-10-07.md](docs/VALIDATION_2026-10-07.md)
 - **Integração HARPia/PX4:** [integration/harpia/README.md](integration/harpia/README.md)
-- **Perfil de missão atual:** [integration/harpia/mission_sim.yaml](integration/harpia/mission_sim.yaml)\n- **Correções finais de DISARM + viewer:** [integration/harpia/runtime/README.md](integration/harpia/runtime/README.md)
+- **Perfil de missão atual:** [integration/harpia/mission_sim.yaml](integration/harpia/mission_sim.yaml)
+- **Correções finais de DISARM + viewer:** [integration/harpia/runtime/README.md](integration/harpia/runtime/README.md)
 
 ## Arquitetura atual
 
