@@ -13,6 +13,10 @@ echo "workspace : $WS"
 echo "repo      : $REPO"
 echo
 
+echo "===== BOOTSTRAP DISTRIBUTED STACK ====="
+bash "$RUNTIME/bootstrap_workspace.sh"
+
+echo
 bash "$RUNTIME/preflight.sh"
 
 echo
