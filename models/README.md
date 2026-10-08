@@ -1,28 +1,27 @@
 # Models
 
-Binary YOLO weights are not committed to normal Git history.
-
-Current simulation model name:
-
-```text
-harpia_person_topdown_pilot_v2.pt
-```
-
-Place the file here for the default simulation config:
+The validated simulation model is tracked with the reproducible HARPia stack:
 
 ```text
 models/harpia_person_topdown_pilot_v2.pt
 ```
 
-or point the ROS parameter `model_path` to an absolute path.
+Its exact size and SHA256 are frozen in:
 
-The current custom weight is a **simulation pilot model**, not a real-flight
-release. See `docs/RETRAINING.md` before using the system with real imagery.
+```text
+integration/harpia/repro/validated_stack.env
+```
 
-For a team release, prefer one of:
+`bootstrap_workspace.sh` verifies the checksum before starting the mission.
 
-1. GitHub Release asset with checksum;
-2. Git LFS;
-3. an internal artifact store.
+The current custom weight is a **top-down simulation pilot model**. It is not a
+real-flight model and its simulation confidence thresholds must not be treated
+as validated thresholds for a physical aircraft.
 
-Whichever mechanism is chosen, keep model version and dataset version explicit.
+For future model versions, do not silently overwrite the validated baseline.
+Follow `docs/MODEL_UPGRADE_POLICY.md`: train a candidate, compare it against
+the baseline, run continuous-video and ROS regressions, then run the complete
+mission before promotion.
+
+Large future weights may move to Git LFS, a GitHub Release asset, or an internal
+artifact store, but every promoted model must keep a version and checksum.
