@@ -152,13 +152,15 @@ pkill -f 'parameter_bridge.*/world/eletroquad26_m1/clock@rosgraph_msgs/msg/Clock
 setsid -f bash -lc '
 set +u
 source /opt/ros/humble/setup.bash
-export GZ_VERSION=garden
-if [ -f /root/ros_gz_garden_ws/install/setup.bash ]; then
-  source /root/ros_gz_garden_ws/install/setup.bash
-fi
 source /root/harpia_ws/install/setup.bash
+set -u
 
-exec ros2 run ros_gz_bridge parameter_bridge \
+export GZ_VERSION=garden
+CACHE="/root/.cache/harpia/ros_gzgarden"
+BIN="$CACHE/opt/ros/humble/lib/ros_gz_bridge/parameter_bridge"
+export LD_LIBRARY_PATH="$CACHE/opt/ros/humble/lib:/opt/ros/humble/lib:${LD_LIBRARY_PATH:-}"
+
+exec "$BIN" \
   "/world/eletroquad26_m1/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock" \
   --ros-args \
   -r "/world/eletroquad26_m1/clock:=/clock"
