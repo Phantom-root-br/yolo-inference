@@ -1,103 +1,158 @@
-# Reproducing the HARPia YOLO demo
+# Reproducing the HARPia YOLO mission
 
-## One command on a prepared HARPia workstation
+This document defines the supported path for reproducing the simulation that
+reached `MISSION_COMPLETE` on 2026-10-07.
 
-Once the machine has the same HARPia/PX4 simulation dependencies and the model
-artifact, the intended team workflow is:
+## Team member workflow
+
+The intended user experience is:
+
+```bash
+mkdir -p /root/harpia_ws/src
+cd /root/harpia_ws/src
+
+git clone https://github.com/Phantom-root-br/yolo-inference.git
+cd yolo-inference
+
+bash integration/harpia/runtime/run_from_zero.sh
+```
+
+`run_from_zero.sh` performs:
+
+```text
+bootstrap distributed stack
+-> preflight
+-> build ROS packages
+-> reset previous HARPiaYolo tmux session
+-> start XRCE/PX4/Gazebo
+-> start ROS-Gazebo bridge
+-> start YOLO
+-> start mission
+-> open annotated camera viewer
+-> continuously print mission state
+-> finish on MISSION_COMPLETE / ERROR_HOLD / timeout
+```
+
+The default graphical behavior matches the validated run:
+
+- Gazebo simulation window;
+- separate annotated drone-camera window;
+- tmux session `HarpiaYolo`;
+- continuous mission-state output in the terminal.
+
+Close the camera viewer with its window-manager **X**, **Esc**, or **q**. To
+run without the camera viewer:
+
+```bash
+HARPIA_VIEWER=0 bash integration/harpia/runtime/run_from_zero.sh
+```
+
+## Base-machine requirements
+
+The repository can distribute the mission, detector, model and simulation
+package, but the host still needs the robotics runtime:
+
+- Ubuntu environment compatible with ROS 2 Humble;
+- ROS 2 Humble at `/opt/ros/humble`;
+- Gazebo Garden / `gz sim`;
+- PX4 build/runtime dependencies;
+- `git`, `tmux`, `python3-venv`, `rsync`.
+
+The validated PX4 revision and model checksum are stored in
+`integration/harpia/repro/validated_stack.env` after the stack freeze is
+published.
+
+## What must be inside the repository
+
+A distribution is considered complete only when all these paths are tracked:
+
+```text
+yolo_person_mission/
+vendor/simulation_bringup_eletroquad26/
+models/harpia_person_topdown_pilot_v2.pt
+integration/harpia/repro/validated_stack.env
+```
+
+Run:
+
+```bash
+bash integration/harpia/runtime/audit_distribution.sh
+```
+
+The required final result is:
+
+```text
+DISTRIBUTION_READY=1
+```
+
+## Maintainer: freeze the exact validated workstation
+
+On the workstation that produced the successful simulation:
 
 ```bash
 cd /root/harpia_ws/src/yolo-inference
 git pull
 
-bash integration/harpia/runtime/run_from_zero.sh
+bash integration/harpia/runtime/publish_validated_stack.sh
 ```
 
-The command performs:
+This publishes a dedicated branch named `reproducible-harpia-demo` containing
+only the exact missing runtime artifacts:
 
-```text
-preflight
--> apply runtime integration fixes
--> colcon build
--> clean previous tmux session
--> start XRCE/PX4/Gazebo/bridge/YOLO/mission
--> open annotated camera viewer
--> continuously print mission state
--> exit only on MISSION_COMPLETE / ERROR_HOLD / timeout
-```
-
-This is deliberately different from the lower-level launcher:
-`run_harpia_yolo_with_viewer.sh` starts the processes and returns. The
-`run_from_zero.sh` wrapper is the recommended human-facing entry point and
-keeps showing mission progress.
-
-## What “from zero” currently means
-
-There are two different meanings of reproducibility and they should not be
-confused.
-
-### A. Fresh clone inside a prepared HARPia workstation
-
-Supported by `run_from_zero.sh`, provided the machine already has:
-
-- ROS 2 Humble;
-- PX4/HARPia workspace;
-- Gazebo Garden and the required ROS-Gazebo bridge;
-- `simulation_bringup_eletroquad26`;
 - local `yolo_person_mission` package;
-- the model artifact `harpia_person_topdown_pilot_v2.pt`.
+- current `simulation_bringup_eletroquad26` package and assets;
+- validated custom model;
+- generated revision/checksum manifest.
 
-### B. Brand-new machine with only this repository
+The script does **not** add local datasets, training runs or unrelated untracked
+files.
 
-**Not yet fully supported.**
+After CI and distribution audit pass, merge that branch into `main`. From
+that point, the team-member workflow at the top of this document is the
+supported entry point.
 
-The portable YOLO detector can be installed from this repository, but the
-complete PX4/Gazebo mission still depends on HARPia assets and a model binary
-that are not all stored in normal Git history.
+## Expected mission sequence
 
-The preflight script intentionally fails with an explicit missing-dependency
-message instead of silently producing a partial demo.
-
-## Expected terminal flow
-
-A successful run should visibly progress through:
+A successful run should visibly reach:
 
 ```text
-WAIT_POSITION
-WARMUP_OFFBOARD
-ENGAGE_OFFBOARD
-ARM
-TAKEOFF_4M
+HOME_CAPTURED
+VEHICLE_ARMED
+TAKEOFF_COMPLETE
 SEARCH_SQUARE_SPIRAL
+PERSON_CONFIRMED
 TARGET_LOCKED
-CENTER_TARGET
 PERSON_CENTERED
-TRACK_CENTER_30S
-DESCEND_TRACK_1M
-TRACK_LOW_30S
-ASCEND_TRACK_4M
-RETURN_HOME
-LAND_HOME
-DISARM
+TRACK_HIGH_30S_COMPLETE
+TARGET_LOW_ALTITUDE_REACHED
+TRACK_LOW_30S_COMPLETE
+ASCEND_TRACK_COMPLETE
+RETURN_HOME_COMPLETE
+LANDED
 VEHICLE_DISARMED
 MISSION_COMPLETE
 COMPLETE
 ```
 
-The annotated camera viewer should open independently and display
-`/yolo/image_annotated`.
+In the validated SITL run, normal DISARM did not confirm after `LANDED`; the
+simulation-only post-landing fallback completed the disarm. That fallback is
+disabled by default outside the simulation launch profile.
 
-## Recommended next packaging milestone
+## Model evolution
 
-To make **B** true, publish/version all of the following:
+Do not replace the validated model in-place while changing mission logic.
 
-1. `yolo_person_mission` package;
-2. minimal HARPia simulation world/model/actor/camera assets;
-3. exact `simulation_bringup_eletroquad26` runner or a pinned dependency;
-4. custom model artifact, preferably a GitHub Release asset with SHA256;
-5. supported PX4 commit/version;
-6. supported ROS/Gazebo versions;
-7. one setup/bootstrap script or container image.
+Model improvements follow:
 
-Until then, describe the repository as a reproducible YOLO/ROS integration plus
-a one-command demo for an already prepared HARPia workstation, not as a
-self-contained PX4 simulator distribution.
+```text
+new dataset
+-> supervised bounding-box annotation
+-> candidate model
+-> offline baseline comparison
+-> continuous-video regression
+-> ROS regression
+-> complete mission regression
+-> promote model
+```
+
+See `docs/MODEL_UPGRADE_POLICY.md`.
