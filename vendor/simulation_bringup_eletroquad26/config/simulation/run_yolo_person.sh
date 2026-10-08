@@ -85,6 +85,26 @@ tmux new-window \
     -t "$SESSION" \
     -n mission
 
+# Keep the reproducibility environment attached to this session even when a
+# tmux server was already running before this bringup.
+tmux set-environment -t "$SESSION" HARPIA_WS "$WS"
+tmux set-environment -t "$SESSION" YOLO_REPO "$YOLO"
+tmux set-environment -t "$SESSION" HARPIA_SIM_DIR "$SIM"
+
+for ENV_NAME in \
+    PX4_DIR \
+    HARPIA_GARDEN_CACHE \
+    YOLO_PYTHON \
+    YOLO_COLCON \
+    DISPLAY \
+    XAUTHORITY
+do
+    ENV_VALUE="${!ENV_NAME:-}"
+    if [ -n "$ENV_VALUE" ]; then
+        tmux set-environment -t "$SESSION" "$ENV_NAME" "$ENV_VALUE"
+    fi
+done
+
 # ------------------------------------------------------------
 # XRCE Agent
 # ------------------------------------------------------------
