@@ -16,6 +16,10 @@
 export GZ_SIM_SYSTEM_PLUGIN_PATH="/usr/local/lib/harpia/wind/lib:${GZ_SIM_SYSTEM_PLUGIN_PATH:-}"
 
 WORLD="eletroquad26_m1"
+WS="${HARPIA_WS:-/root/harpia_ws}"
+SIM="${HARPIA_SIM_DIR:-$WS/src/simulation_bringup_eletroquad26}"
+PX4_DIR="${PX4_DIR:-/root/PX4-Autopilot}"
+GARDEN_CACHE="${HARPIA_GARDEN_CACHE:-/root/.cache/harpia/ros_gzgarden}"
 
 export GZ_VERSION=garden
 export GZ_IP=127.0.0.1
@@ -30,14 +34,13 @@ chmod 700 /tmp/runtime-root
 
 export XDG_RUNTIME_DIR=/tmp/runtime-root
 export QT_X11_NO_MITSHM=1
-PX4_DIR="/root/PX4-Autopilot"
-WORLD_FILE="/root/harpia_ws/src/simulation_bringup_eletroquad26/worlds/harpia_yolo_person.sdf"
+WORLD_FILE="$SIM/worlds/harpia_yolo_person.sdf"
 
 SERVER_LOG="/tmp/harpia_yolo_person_gz_server.log"
 GUI_LOG="/tmp/harpia_yolo_person_gz_gui.log"
 
 # Caminhos que já foram validados manualmente.
-export GZ_SIM_RESOURCE_PATH="/root/harpia_ws/src/simulation_bringup_eletroquad26/models:/root/harpia_ws/src/simulation_bringup_eletroquad26/worlds:/root/PX4-Autopilot/Tools/simulation/gz/models:/root/PX4-Autopilot/Tools/simulation/gz/worlds:/opt/ros/humble/share/as2_gazebo_assets/worlds:/opt/ros/humble/share/as2_gazebo_assets/models"
+export GZ_SIM_RESOURCE_PATH="$SIM/models:$SIM/worlds:$PX4_DIR/Tools/simulation/gz/models:$PX4_DIR/Tools/simulation/gz/worlds:/opt/ros/humble/share/as2_gazebo_assets/worlds:/opt/ros/humble/share/as2_gazebo_assets/models"
 
 # Não usar a partição experimental dos testes anteriores.
 unset GZ_PARTITION
@@ -103,7 +106,7 @@ echo
 
 echo "Criando modelo HARPia como entidade x500_0..."
 
-HARP_MODEL="/root/harpia_ws/src/simulation_bringup_eletroquad26/models/harpia_yolo_x500/model.sdf"
+HARP_MODEL="$SIM/models/harpia_yolo_x500/model.sdf"
 
 # O PX4 será conectado depois à entidade x500_0.
 # O modelo físico é o HARPia customizado, que contém a câmera downward.
@@ -152,11 +155,11 @@ pkill -f 'parameter_bridge.*/world/eletroquad26_m1/clock@rosgraph_msgs/msg/Clock
 setsid -f bash -lc '
 set +u
 source /opt/ros/humble/setup.bash
-source /root/harpia_ws/install/setup.bash
+source "$WS/install/setup.bash"
 set -u
 
 export GZ_VERSION=garden
-CACHE="/root/.cache/harpia/ros_gzgarden"
+CACHE="$GARDEN_CACHE"
 BIN="$CACHE/opt/ros/humble/lib/ros_gz_bridge/parameter_bridge"
 export LD_LIBRARY_PATH="$CACHE/opt/ros/humble/lib:/opt/ros/humble/lib:${LD_LIBRARY_PATH:-}"
 
