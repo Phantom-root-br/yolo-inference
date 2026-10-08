@@ -69,7 +69,7 @@ HARPIA_WS="$WS" YOLO_REPO="$STAGE" HARPIA_MISSION_SRC="$MISSION_SRC" HARPIA_SIM_
 echo
 echo "===== STAGE ONLY REQUIRED DISTRIBUTION FILES ====="
 
-git -C "$STAGE" add   yolo_person_mission   vendor/simulation_bringup_eletroquad26   models/harpia_person_topdown_pilot_v2.pt   integration/harpia/repro/validated_stack.env
+git -C "$STAGE" add   yolo_person_mission   vendor/simulation_bringup_eletroquad26   vendor/ros_gzgarden   models/harpia_person_topdown_pilot_v2.pt   integration/harpia/repro/validated_stack.env
 
 echo
 git -C "$STAGE" status --short
@@ -81,7 +81,7 @@ fi
 echo
 echo "===== COMMIT ====="
 
-git -C "$STAGE" commit   -m "repro(harpia): publish validated mission simulation stack"
+git -C "$STAGE" commit   -m "repro(harpia): publish self-contained validated simulation stack"
 
 COMMIT_SHA="$(git -C "$STAGE" rev-parse HEAD)"
 
