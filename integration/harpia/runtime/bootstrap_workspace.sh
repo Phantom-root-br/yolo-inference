@@ -62,12 +62,22 @@ fi
 VENV="${YOLO_VENV:-/root/yolo_venv}"
 
 if [[ ! -x "$VENV/bin/python3" ]]; then
-  echo "[INFO] creating Python venv: $VENV"
-  python3 -m venv "$VENV"
+  echo "[INFO] creating ROS-aware Python venv: $VENV"
+  python3 -m venv --system-site-packages "$VENV"
 fi
 
 "$VENV/bin/python3" -m pip install --upgrade pip
 "$VENV/bin/python3" -m pip install -r "$REPO/requirements-ros2.txt"
+
+if [[ -x "$VENV/bin/colcon" ]]; then
+  COLCON_BIN="$VENV/bin/colcon"
+elif command -v colcon >/dev/null 2>&1; then
+  COLCON_BIN="$(command -v colcon)"
+else
+  echo "[INFO] installing colcon into YOLO venv"
+  "$VENV/bin/python3" -m pip install colcon-common-extensions
+  COLCON_BIN="$VENV/bin/colcon"
+fi
 
 set +u
 source /opt/ros/humble/setup.bash
@@ -75,7 +85,7 @@ set -u
 
 cd "$WS"
 
-"$VENV/bin/colcon" build   --packages-select   simulation_bringup   yolo_person_interfaces   yolo_person_detector   yolo_person_mission   --symlink-install
+"$COLCON_BIN" build   --packages-select   simulation_bringup   yolo_person_interfaces   yolo_person_detector   yolo_person_mission   --symlink-install
 
 echo
 echo "[OK] workspace bootstrap complete"
