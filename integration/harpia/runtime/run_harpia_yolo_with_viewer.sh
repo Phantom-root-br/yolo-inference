@@ -22,6 +22,13 @@ set -u
 
 bash "$RUN_SCRIPT"
 
+case "${HARPIA_VIEWER:-1}" in
+  0|false|FALSE|no|NO)
+    echo "[viewer] disabled by HARPIA_VIEWER=${HARPIA_VIEWER}"
+    exit 0
+    ;;
+esac
+
 echo "[viewer] waiting for /yolo_person_detector"
 
 for _ in $(seq 1 120); do
