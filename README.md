@@ -59,59 +59,75 @@ de uma imagem ROS 2 e pode ser movido para outra máquina, câmera ou robô.
 
 Detalhes: [docs/ROS2_PORTABILITY.md](docs/ROS2_PORTABILITY.md).
 
-## Executar a demo HARPia em um comando
+## Executar a missão validada
 
-Em uma máquina que já tenha o workspace HARPia/PX4 e o modelo customizado, o
-fluxo recomendado para qualquer membro da equipe é:
+Para reproduzir o cenário validado, use o layout abaixo. O host precisa ter
+**Ubuntu compatível com ROS 2 Humble**, **ROS 2 Humble**, **Gazebo Garden
+(gz-sim7)**, as dependências de build do PX4 e **MicroXRCEAgent**. O próprio
+repositório cuida da stack específica da missão.
 
 ```bash
-cd /root/harpia_ws/src/yolo-inference
-git pull
+mkdir -p /root/harpia_ws/src
+cd /root/harpia_ws/src
+
+git clone https://github.com/Phantom-root-br/yolo-inference.git
+cd yolo-inference
 
 bash integration/harpia/runtime/run_from_zero.sh
 ```
 
-Esse comando faz preflight, aplica a integração, builda, inicia
-PX4/Gazebo/bridge/YOLO/missão, abre a câmera anotada e **continua exibindo os
-estados da missão até `MISSION_COMPLETE` ou `ERROR_HOLD`**.
+O primeiro passo é um `HOST CHECK`. Se o host estiver correto, o comando:
+
+```text
+confere o host
+-> obtém PX4 no commit validado
+-> obtém px4_msgs no commit validado
+-> instala o bridge Garden congelado
+-> confere hashes do modelo/assets
+-> cria/atualiza o ambiente Python
+-> builda o workspace ROS 2
+-> inicia XRCE/PX4/Gazebo
+-> inicia a câmera e o detector YOLO
+-> inicia a FSM da missão
+-> abre a janela separada da câmera anotada
+-> mostra continuamente os estados
+-> termina em MISSION_COMPLETE ou ERROR_HOLD
+```
+
+A execução gráfica validada produz o Gazebo e a janela separada
+`HARPia YOLO - Camera`. Para executar sem essa segunda janela:
+
+```bash
+HARPIA_VIEWER=0 bash integration/harpia/runtime/run_from_zero.sh
+```
 
 Guia completo:
 [docs/REPRODUCE_HARPIA_DEMO.md](docs/REPRODUCE_HARPIA_DEMO.md).
 
 ## Reprodutibilidade
 
-Há dois níveis diferentes de reprodução:
+A stack específica da missão está agora versionada neste repositório:
 
-| Escopo | Clone de `yolo-inference` sozinho? | Observação |
-|---|---|---|
-| Detector YOLO ROS 2 portátil | **Quase** | precisa fornecer um peso `.pt` compatível |
-| Treinamento / retraining | **Sim** | dataset é externo por definição |
-| Missão HARPia completa em Gazebo/PX4 | **Não, ainda** | depende do workspace HARPia, PX4 e `simulation_bringup_eletroquad26` |
+- FSM `yolo_person_mission`;
+- modelo `harpia_person_topdown_pilot_v2.pt`;
+- world, ator e X500 HARPia;
+- assets completos `eletroquad_26`;
+- LW20 e RealSense D435 usados pelo X500;
+- pacotes `.deb` do bridge Garden usado no run validado;
+- commits exatos de PX4 e `px4_msgs`;
+- checksums SHA256 no manifest
+  `integration/harpia/repro/validated_stack.env`.
 
-O repositório contém o detector, interfaces, configurações, documentação,
-tuning, política de evolução do modelo e o kit de integração/runtime HARPia.
+| Escopo | Estado |
+|---|---|
+| Detector YOLO ROS 2 portátil | **Reproduzível** |
+| Missão HARPia completa no host suportado | **Reproduzível pelo `run_from_zero.sh`** |
+| Instalação do sistema operacional/ROS/Gazebo | **Pré-requisito do host, não gerenciado pelo repo** |
+| Treinamento com novos dados reais | **Pipeline documentado; dataset é externo** |
 
-Para reproduzir **exatamente a simulação completa**, a máquina também precisa
-ter:
-
-```text
-ROS 2 Humble
-PX4-Autopilot / px4_msgs
-Gazebo Garden + ros_gz_bridge
-simulation_bringup_eletroquad26
-mundo/modelo/câmera HARPia usados na simulação
-peso harpia_person_topdown_pilot_v2.pt
-```
-
-Os scripts em `integration/harpia/runtime/` assumem o layout do workspace
-validado em `/root/harpia_ws`, mas aceitam `HARPIA_WS` e `YOLO_REPO` para
-outros caminhos.
-
-**Importante:** o peso customizado e os assets do simulador não devem ser
-inferidos a partir do README; eles precisam ser distribuídos/versionados
-explicitamente. Até esses artefatos serem publicados junto da release, o
-repositório é reprodutível para a camada YOLO, mas não é ainda um
-`clone && run` da missão completa.
+O layout padrão validado continua sendo `/root/harpia_ws`. O objetivo do
+entrypoint é evitar configuração manual da stack da missão; ele não substitui
+a instalação base de ROS 2/Gazebo do computador.
 
 ## Estado atual da integração HARPia
 
@@ -262,7 +278,10 @@ Modelo de simulação:
 harpia_person_topdown_pilot_v2.pt
 ```
 
-O peso não é armazenado no Git normal. Consulte [models/README.md](models/README.md).
+O peso validado está versionado em `models/harpia_person_topdown_pilot_v2.pt`
+e seu SHA256 é congelado em
+`integration/harpia/repro/validated_stack.env`. Consulte
+[models/README.md](models/README.md).
 
 O modelo atual é um **pilot de simulação top-down**. Ele não deve ser tratado
 como modelo validado para voo real.
@@ -319,7 +338,12 @@ Além de mAP, a missão deve medir:
 ├── integration/
 │   └── harpia/
 │       ├── README.md
-│       └── mission_sim.yaml
+│       ├── mission_sim.yaml
+│       └── runtime/
+├── yolo_person_mission/
+├── vendor/
+│   ├── simulation_bringup_eletroquad26/
+│   └── ros_gzgarden/
 ├── docs/
 │   ├── ROS2_PORTABILITY.md
 │   ├── RETRAINING.md
