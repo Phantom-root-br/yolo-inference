@@ -45,3 +45,4 @@ jobs:
           bash -n integration/harpia/runtime/bootstrap_workspace.sh
           bash -n integration/harpia/runtime/package_validated_stack.sh
           bash -n integration/harpia/runtime/audit_distribution.sh
+          bash -n integration/harpia/runtime/publish_validated_stack.sh
