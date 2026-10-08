@@ -2,14 +2,14 @@
 
 set -u
 
-WS="/root/harpia_ws"
-SIM="$WS/src/simulation_bringup_eletroquad26"
-YOLO="$WS/src/yolo-inference"
+WS="${HARPIA_WS:-/root/harpia_ws}"
+SIM="${HARPIA_SIM_DIR:-$WS/src/simulation_bringup_eletroquad26}"
+YOLO="${YOLO_REPO:-$WS/src/yolo-inference}"
 
-SESSION="HarpiaYolo"
+SESSION="${HARPIA_TMUX_SESSION:-HarpiaYolo}"
 
 START_PX4="$SIM/config/simulation/start_px4_yolo_person.sh"
-MODEL="/root/harpia_ws/src/yolo-inference/models/harpia_person_topdown_pilot_v2.pt"
+MODEL="${HARPIA_YOLO_MODEL:-$YOLO/models/harpia_person_topdown_pilot_v2.pt}"
 
 AUTO_MISSION="${HARPIA_YOLO_AUTOSTART_MISSION:-1}"
 
@@ -119,7 +119,7 @@ export GZ_VERSION=garden; \
 source '$WS/install/setup.bash'; \
 clear; \
 echo '=== HARPia YOLO / ROS-Gazebo Bridge ==='; \
-bash /root/harpia_ws/src/simulation_bringup_eletroquad26/config/simulation/start_garden_camera_bridge.sh"
+bash '$SIM/config/simulation/start_garden_camera_bridge.sh'"
 
 tmux send-keys \
     -t "$SESSION:bridge" \
@@ -170,7 +170,7 @@ source /opt/ros/humble/setup.bash; \
 source '$WS/install/setup.bash'; \
 clear; \
 echo '=== HARPia YOLO / Person Mission ==='; \
-echo 'Iniciando FSM YOLO diretamente ...'; bash '/root/harpia_ws/src/simulation_bringup_eletroquad26/config/simulation/wait_and_start_yolo_mission.sh'"
+echo 'Iniciando FSM YOLO diretamente ...'; bash '$SIM/config/simulation/wait_and_start_yolo_mission.sh'"
 
     tmux send-keys \
         -t "$SESSION:mission" \
