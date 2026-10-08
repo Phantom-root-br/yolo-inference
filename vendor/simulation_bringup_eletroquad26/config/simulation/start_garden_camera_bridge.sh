@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set +H 2>/dev/null || true
+WS="${HARPIA_WS:-/root/harpia_ws}"
+CACHE="${HARPIA_GARDEN_CACHE:-/root/.cache/harpia/ros_gzgarden}"
 source /opt/ros/humble/setup.bash
-source /root/harpia_ws/install/setup.bash
-CACHE="/root/.cache/harpia/ros_gzgarden"
+source "$WS/install/setup.bash"
 BIN="$CACHE/opt/ros/humble/lib/ros_gz_bridge/parameter_bridge"
 export GZ_IP=127.0.0.1
 export IGN_IP=127.0.0.1
