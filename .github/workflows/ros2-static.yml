@@ -42,6 +42,7 @@ jobs:
           bash -n integration/harpia/runtime/preflight.sh
           bash -n integration/harpia/runtime/monitor_mission.sh
           bash -n integration/harpia/runtime/run_from_zero.sh
+          bash -n integration/harpia/runtime/install_garden_bridge.sh
           bash -n integration/harpia/runtime/locate_final_external_assets.sh
           bash -n integration/harpia/runtime/audit_runtime_dependencies.sh
           bash -n integration/harpia/runtime/bootstrap_workspace.sh
