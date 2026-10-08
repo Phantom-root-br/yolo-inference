@@ -84,3 +84,27 @@ MISSION_COMPLETE
 
 The patch is idempotent: running `apply_and_build.sh` again should not keep
 adding duplicate mission parameters or helper methods.
+
+
+## Validation result
+
+Validated on 2026-10-07 in the current HARPia SITL setup.
+
+Observed final sequence:
+
+```text
+ASCEND_TRACK_COMPLETE
+RETURN_HOME_COMPLETE
+LANDED
+DISARM normal did not confirm
+force-disarm POST-LANDED (simulation only)
+VEHICLE_DISARMED
+MISSION_COMPLETE
+DISARM -> COMPLETE
+```
+
+The annotated viewer also received its first `640x480` frame successfully.
+
+This closes the two runtime defects for the validated simulation profile. The
+force-disarm fallback remains disabled by default and must not be assumed safe
+for a real aircraft.
