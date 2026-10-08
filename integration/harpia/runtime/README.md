@@ -108,3 +108,19 @@ The annotated viewer also received its first `640x480` frame successfully.
 This closes the two runtime defects for the validated simulation profile. The
 force-disarm fallback remains disabled by default and must not be assumed safe
 for a real aircraft.
+
+
+### Closing or disabling the viewer
+
+The camera window is optional and independent from mission execution.
+
+- click the window-manager **X**, press **Esc**, or press **q** to terminate the
+  viewer process; it must not reopen on the next image frame;
+- to run the complete mission without opening the camera window:
+
+```bash
+HARPIA_VIEWER=0 bash integration/harpia/runtime/run_from_zero.sh
+```
+
+The default remains `HARPIA_VIEWER=1` because visual confirmation is useful
+during simulation.
