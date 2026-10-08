@@ -93,7 +93,7 @@ if [[ -d "$WIND_DIR" ]]; then
   ok "wind plugin dir: $WIND_DIR"
   find "$WIND_DIR" -maxdepth 1 -type f -printf '%f\n' | sort
 else
-  bad "wind plugin dir: $WIND_DIR"
+  warn "wind plugin dir absent: $WIND_DIR (validated run also succeeded without it)"
 fi
 
 echo
